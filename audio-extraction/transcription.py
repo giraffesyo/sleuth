@@ -26,12 +26,11 @@ def extract_audio(video_path, audio_path):
         return None
 
 
-def transcribe_audio(audio_path, transcript_path):
+def transcribe_audio(audio_path):
     """Transcribe audio file to text
 
     Args:
         audio_path (file): Path to audio file
-        transcript_path (file): Path to save transcript file
     """
     try:
         model = whisper.load_model("base")
@@ -54,49 +53,47 @@ def find_relevant_timestamps(segments, keywords):
     for segment in segments:
         text = segment["text"].lower()
         if any(keyword in text for keyword in keywords):
-            relevant_segments.append(
+            relevant_timestamps.append(
                 {
                     "start": segment["start"],
                     "end": segment["end"],
                     "text": segment["text"],
                 }
             )
-    return relevant_segments
+    return relevant_timestamps
+
+
+def save_keywords_timestamps(relevant_segments, transcript_path):
+    """Save relevant timestamps to file
+
+    Args:
+        relevant_segments (list): List of relevant timestamps
+        transcript_path (file): Path to save transcript file
+    """
+    with open(transcript_path, "w") as f:
+        for segment in relevant_segments:
+            f.write(f"{segment['start']} - {segment['end']}: {segment['text']}\n")
+    print(f"Relevant transcription saved to {transcript_path}")
 
 
 # Example usage
-# video_path = "path/to/video.mp4"
-# audio_path = "path/to/audio.wav"
-# transcript_path = "path/to/transcript.txt"
-# keywords = ["keyword1", "keyword2"]
-
-# extracted_audio_path = extract_audio(video_path, audio_path)
-# if extracted_audio_path:
-#     transcript, segments = transcribe_audio(extracted_audio_path, transcript_path)
-#     if transcript:
-#         relevant_timestamps = find_relevant_timestamps(segments, keywords)
-#         print("Transcript:", transcript)
-#         print("Relevant timestamps:")
-#         for timestamp in relevant_timestamps:
-#             print(f"Start: {timestamp['start']}, End: {timestamp['end']}, Text: {timestamp['text']}")
-
-video_path = "sample_video.mp4"  # Replace with path to video file
+video_path = "output.mp4"  # Replace with path to video file
+transcript_path = "output/transcription_results.txt"
 keywords = [
+    "murder",
+    "DNA",
+    "dna",
     "body found",
     "location of the body",
     "discovery site",
 ]  # Keywords to search for in transcript
 
-audio_path = extract_audio(video_path)
-transcript, segments = transcribe_audio(audio_path)
+# audio_path = extract_audio(video_path)
+# transcript, segments = transcribe_audio(audio_path)
+
+transcript, segments = transcribe_audio(video_path)
 
 relevant_segments = find_relevant_timestamps(segments, keywords)
 
 # Save output
-os.makedirs("output", exist_ok=True)
-output_file = "output/transcription_results.txt"
-with open(output_file, "w") as f:
-    for segment in relevant_segments:
-        f.write(f"{segment['start']} - {segment['end']}: {segment['text']}\n")
-
-print(f"Relevant transcription saved to {output_file}")
+save_keywords_timestamps(relevant_segments, transcript_path)
