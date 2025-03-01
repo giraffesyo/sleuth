@@ -2,6 +2,7 @@ package search
 
 import (
 	"github.com/giraffesyo/sleuth/internal/sleuth"
+	"github.com/giraffesyo/sleuth/internal/sleuth/providers"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
@@ -21,8 +22,8 @@ var Cmd = &cobra.Command{
 
 func run(cmd *cobra.Command, args []string) {
 	sleuth := sleuth.NewSleuth(
-		sleuth.WithProvider(sleuth.ProviderCNN),
-		sleuth.WithProvider(sleuth.ProviderFoxNews),
+		sleuth.WithProvider(providers.ProviderCNN),
+		sleuth.WithProvider(providers.ProviderFoxNews),
 		sleuth.WithSearchQuery(query),
 	)
 	err := sleuth.Run()

@@ -5,4 +5,5 @@ type Video struct {
 	URL         string `json:"url"`
 	Date        string `json:"date"`
 	Description string `json:"description"`
+	Provider    string `json:"provider"`
 }

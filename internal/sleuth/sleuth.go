@@ -8,18 +8,13 @@ import (
 )
 
 type sleuth struct {
-	enabledProviders []provider
+	enabledProviders []string
 	query            string
 }
 
 type sleuthOption func(*sleuth)
 
-type provider string
-
-const ProviderCNN = provider("cnn")
-const ProviderFoxNews = provider("foxnews")
-
-func WithProvider(p provider) sleuthOption {
+func WithProvider(p string) sleuthOption {
 	return func(s *sleuth) {
 		s.enabledProviders = append(s.enabledProviders, p)
 	}
@@ -47,12 +42,14 @@ func (s *sleuth) Run() error {
 	log.Info().Str("query", s.query).Msg("searching for news articles")
 	for _, p := range s.enabledProviders {
 		switch p {
-		case ProviderCNN:
+		case providers.ProviderCNN:
 			log.Info().Msg("CNN is enabled")
 			providers.NewCNNProvider(ctx).Search(s.query)
-		case ProviderFoxNews:
+		case providers.ProviderFoxNews:
 			log.Info().Msg("Fox News is enabled")
 			log.Warn().Msg("Fox News provider is not implemented")
+		default:
+			log.Error().Str("provider", p).Msg("unknown provider")
 		}
 	}
 	return nil

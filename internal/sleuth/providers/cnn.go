@@ -11,6 +11,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const ProviderCNN = "cnn"
+
 type Provider interface {
 	Search(query string) ([]videos.Video, error)
 }
@@ -61,7 +63,6 @@ func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
 
 	results := []videos.Video{}
 	// Callback for when an HTML element with the video result appears.
-	// (The selector here is assumed; update it based on the actual HTML structure.)
 	c.OnHTML(`div[data-uri^="/_components/card/instances/search-"]`, func(e *colly.HTMLElement) {
 		// Extract the video link from the <a> element with the appropriate class.
 		link := e.ChildAttr("a.container__link--type-Video", "href")
