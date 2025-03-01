@@ -52,6 +52,7 @@ func (s *sleuth) Run() error {
 			providers.NewCNNProvider(ctx).Search(s.query)
 		case ProviderFoxNews:
 			log.Info().Msg("Fox News is enabled")
+			log.Warn().Msg("Fox News provider is not implemented")
 		}
 	}
 	return nil
