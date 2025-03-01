@@ -6,7 +6,7 @@ import (
 
 type sleuth struct {
 	enabledProviders []provider
-	searchTerm       string
+	query            string
 }
 
 type sleuthOption func(*sleuth)
@@ -22,9 +22,9 @@ func WithProvider(p provider) sleuthOption {
 	}
 }
 
-func WithSearchTerm(term string) sleuthOption {
+func WithSearchQuery(query string) sleuthOption {
 	return func(s *sleuth) {
-		s.searchTerm = term
+		s.query = query
 	}
 }
 
@@ -36,7 +36,11 @@ func NewSleuth(options ...sleuthOption) *sleuth {
 	return s
 }
 
-func (s *sleuth) Run() {
+func (s *sleuth) Run() error {
+	if s.query == "" {
+		return ErrEmptySearchQuery
+	}
+	log.Info().Str("query", s.query).Msg("searching for news articles")
 	for _, p := range s.enabledProviders {
 		switch p {
 		case ProviderCNN:
@@ -45,4 +49,5 @@ func (s *sleuth) Run() {
 			log.Info().Msg("Fox News is enabled")
 		}
 	}
+	return nil
 }

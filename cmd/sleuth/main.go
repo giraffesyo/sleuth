@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/giraffesyo/sleuth/internal/sleuth"
+	"github.com/giraffesyo/sleuth/internal/cli"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -11,9 +11,5 @@ import (
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	sleuth := sleuth.NewSleuth(
-		sleuth.WithProvider(sleuth.ProviderCNN),
-		sleuth.WithProvider(sleuth.ProviderFoxNews),
-	)
-	sleuth.Run()
+	cli.RootCmd.Execute()
 }
