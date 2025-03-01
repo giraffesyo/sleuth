@@ -14,11 +14,6 @@ import (
 
 const ProviderCNN = "cnn"
 
-type Provider interface {
-	Search(query string) ([]videos.Video, error)
-	ProviderName() string
-}
-
 type providerOption func(*cnnProvider)
 
 type cnnProvider struct {
