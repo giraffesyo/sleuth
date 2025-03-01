@@ -6,6 +6,7 @@ import (
 
 type sleuth struct {
 	enabledProviders []provider
+	searchTerm       string
 }
 
 type sleuthOption func(*sleuth)
@@ -18,6 +19,12 @@ const ProviderFoxNews = provider("foxnews")
 func WithProvider(p provider) sleuthOption {
 	return func(s *sleuth) {
 		s.enabledProviders = append(s.enabledProviders, p)
+	}
+}
+
+func WithSearchTerm(term string) sleuthOption {
+	return func(s *sleuth) {
+		s.searchTerm = term
 	}
 }
 
