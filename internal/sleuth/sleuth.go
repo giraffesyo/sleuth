@@ -1,6 +1,9 @@
 package sleuth
 
 import (
+	"context"
+
+	"github.com/giraffesyo/sleuth/internal/sleuth/providers"
 	"github.com/rs/zerolog/log"
 )
 
@@ -37,6 +40,7 @@ func NewSleuth(options ...sleuthOption) *sleuth {
 }
 
 func (s *sleuth) Run() error {
+	ctx := context.Background()
 	if s.query == "" {
 		return ErrEmptySearchQuery
 	}
@@ -45,6 +49,7 @@ func (s *sleuth) Run() error {
 		switch p {
 		case ProviderCNN:
 			log.Info().Msg("CNN is enabled")
+			providers.NewCNNProvider(ctx).Search(s.query)
 		case ProviderFoxNews:
 			log.Info().Msg("Fox News is enabled")
 		}
