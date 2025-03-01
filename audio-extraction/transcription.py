@@ -1,6 +1,7 @@
 import whisper
 import ffmpeg
 import os
+import time
 
 
 def extract_audio(video_path, audio_path):
@@ -53,14 +54,24 @@ def find_relevant_timestamps(segments, keywords):
     for segment in segments:
         text = segment["text"].lower()
         if any(keyword in text for keyword in keywords):
+            # save times as 2 decimal places
             relevant_timestamps.append(
                 {
-                    "start": segment["start"],
-                    "end": segment["end"],
+                    "start": round(segment["start"], 2),
+                    "end": round(segment["end"], 2),
                     "text": segment["text"],
                 }
             )
     return relevant_timestamps
+
+
+def convert_timestamp_to_hhmmss(seconds):
+    """Convert seconds to MM:SS format
+
+    Args:
+        seconds (int): Seconds to convert
+    """
+    return time.strftime("%M:%S", time.gmtime(seconds))
 
 
 def save_keywords_timestamps(relevant_segments, transcript_path):
@@ -72,7 +83,10 @@ def save_keywords_timestamps(relevant_segments, transcript_path):
     """
     with open(transcript_path, "w") as f:
         for segment in relevant_segments:
-            f.write(f"{segment['start']} - {segment['end']}: {segment['text']}\n")
+            # f.write(f"{segment['start']} - {segment['end']}: {segment['text']}\n")
+            f.write(
+                f"{convert_timestamp_to_hhmmss(segment['start'])} - {convert_timestamp_to_hhmmss(segment['end'])}: {segment['text']}\n"
+            )
     print(f"Relevant transcription saved to {transcript_path}")
 
 
