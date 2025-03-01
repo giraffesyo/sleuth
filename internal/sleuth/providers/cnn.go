@@ -89,6 +89,7 @@ func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
 			Title:       title,
 			Date:        date,
 			Description: description,
+			Provider:    ProviderCNN,
 		}
 		results = append(results, video)
 	})
