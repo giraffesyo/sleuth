@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
+	"github.com/PuerkitoBio/goquery"
+	"github.com/chromedp/chromedp"
 	"github.com/giraffesyo/sleuth/internal/sleuth/videos"
-	"github.com/gocolly/colly"
-	"github.com/gocolly/colly/debug"
 	"github.com/rs/zerolog/log"
 )
 
@@ -52,56 +53,70 @@ func (p *cnnProvider) ProviderName() string {
 }
 
 func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
-	c := colly.NewCollector(
-		colly.AllowedDomains(p.allowedDomains...),
-		colly.Debugger(&debug.LogDebugger{}),
-	)
-	// url escape the query
-	escapedquery := url.QueryEscape(query)
-	c.OnRequest(func(r *colly.Request) {
-		// simply log each request
-		log.Info().Str("url", r.URL.String()).Msg("visiting")
-	})
+	// Create a new chromedp context from the provider's context.
+	ctx, cancel := chromedp.NewContext(p.context)
+	defer cancel()
+
+	// Set a timeout for the chromedp tasks.
+	ctx, cancel = context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	// Build the search URL.
+	escapedQuery := url.QueryEscape(query)
+	searchURL := fmt.Sprintf("%s%s", p.searchUrl, escapedQuery)
+	log.Info().Str("url", searchURL).Msg("Navigating to search URL with chromedp")
+
+	var renderedHTML string
+	// Run chromedp tasks:
+	// 1. Navigate to the search URL.
+	// 2. Wait until at least one search result card is visible.
+	// 3. Extract the outer HTML of the page.
+	tasks := chromedp.Tasks{
+		chromedp.Navigate(searchURL),
+		chromedp.WaitVisible(`div[data-uri^="/_components/card/instances/search-"]`, chromedp.ByQuery),
+		chromedp.OuterHTML("html", &renderedHTML, chromedp.ByQuery),
+	}
+
+	if err := chromedp.Run(ctx, tasks); err != nil {
+		log.Error().Err(err).Msg("chromedp run failed")
+		return nil, err
+	}
+
+	// Parse the rendered HTML using goquery.
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(renderedHTML))
+	if err != nil {
+		return nil, err
+	}
 
 	results := []videos.Video{}
-	// Callback for when an HTML element with the video result appears.
-	c.OnHTML(`div[data-uri^="/_components/card/instances/search-"]`, func(e *colly.HTMLElement) {
-		// Extract the video link from the <a> element with the appropriate class.
-		link := e.ChildAttr("a.container__link--type-Video", "href")
-		if link == "" {
+	// Iterate over each search result card.
+	doc.Find(`div[data-uri^="/_components/card/instances/search-"]`).Each(func(i int, s *goquery.Selection) {
+		link, exists := s.Find("a.container__link--type-Video").Attr("href")
+		if !exists || link == "" {
 			return
 		}
 		// Ensure the URL is absolute.
 		if strings.HasPrefix(link, "/") {
 			link = "https://www.cnn.com" + link
 		}
-
 		// Use "/video/" as the heuristic to confirm the result is a video.
 		if !strings.Contains(link, "/video/") {
 			return
 		}
 
-		// Get the title, date, and description.
-		title := e.ChildText("span.container__headline-text")
-		date := e.ChildText("div.container__date")
-		description := e.ChildText("div.container__description")
+		title := s.Find("span.container__headline-text").Text()
+		date := s.Find("div.container__date").Text()
+		description := s.Find("div.container__description").Text()
 
 		video := videos.Video{
-			URL:         link,
-			Title:       title,
-			Date:        date,
-			Description: description,
+			URL:         strings.TrimSpace(link),
+			Title:       strings.TrimSpace(title),
+			Date:        strings.TrimSpace(date),
+			Description: strings.TrimSpace(description),
 			Provider:    ProviderCNN,
 		}
 		results = append(results, video)
 	})
-
-	err := c.Visit(fmt.Sprintf("%s%s", p.searchUrl, escapedquery))
-	if err != nil {
-		return nil, err
-	}
-
-	c.Wait()
 
 	return results, nil
 }
