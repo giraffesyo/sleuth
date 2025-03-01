@@ -8,6 +8,7 @@ import (
 
 	"github.com/giraffesyo/sleuth/internal/sleuth/videos"
 	"github.com/gocolly/colly"
+	"github.com/gocolly/colly/debug"
 	"github.com/rs/zerolog/log"
 )
 
@@ -15,6 +16,7 @@ const ProviderCNN = "cnn"
 
 type Provider interface {
 	Search(query string) ([]videos.Video, error)
+	ProviderName() string
 }
 
 type providerOption func(*cnnProvider)
@@ -42,7 +44,7 @@ func NewCNNProvider(ctx context.Context, providerOptions ...providerOption) *cnn
 	p := &cnnProvider{
 		context:        ctx,
 		allowedDomains: []string{"cnn.com", "www.cnn.com"},
-		searchUrl:      "https://www.cnn.com/search?q=",
+		searchUrl:      "https://www.cnn.com/search?types=video&q=",
 	}
 	for _, o := range providerOptions {
 		o(p)
@@ -50,9 +52,14 @@ func NewCNNProvider(ctx context.Context, providerOptions ...providerOption) *cnn
 	return p
 }
 
+func (p *cnnProvider) ProviderName() string {
+	return ProviderCNN
+}
+
 func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
 	c := colly.NewCollector(
 		colly.AllowedDomains(p.allowedDomains...),
+		colly.Debugger(&debug.LogDebugger{}),
 	)
 	// url escape the query
 	escapedquery := url.QueryEscape(query)
@@ -98,6 +105,8 @@ func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	c.Wait()
 
 	return results, nil
 }

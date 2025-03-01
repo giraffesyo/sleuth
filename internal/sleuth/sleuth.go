@@ -2,8 +2,12 @@ package sleuth
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"os"
 
 	"github.com/giraffesyo/sleuth/internal/sleuth/providers"
+	"github.com/giraffesyo/sleuth/internal/sleuth/videos"
 	"github.com/rs/zerolog/log"
 )
 
@@ -34,6 +38,19 @@ func NewSleuth(options ...sleuthOption) *sleuth {
 	return s
 }
 
+func writeVideosToFile(provider string, videos []videos.Video) error {
+	jsonData, err := json.MarshalIndent(videos, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal videos: %w", err)
+	}
+	filename := fmt.Sprintf("%s.json", provider)
+	err = os.WriteFile(filename, jsonData, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write videos to file: %w", err)
+	}
+	return nil
+}
+
 func (s *sleuth) Run() error {
 	ctx := context.Background()
 	if s.query == "" {
@@ -41,15 +58,29 @@ func (s *sleuth) Run() error {
 	}
 	log.Info().Str("query", s.query).Msg("searching for news articles")
 	for _, p := range s.enabledProviders {
+		var provider providers.Provider
 		switch p {
 		case providers.ProviderCNN:
 			log.Info().Msg("CNN is enabled")
-			providers.NewCNNProvider(ctx).Search(s.query)
+			provider = providers.NewCNNProvider(ctx)
 		case providers.ProviderFoxNews:
 			log.Info().Msg("Fox News is enabled")
 			log.Warn().Msg("Fox News provider is not implemented")
+			// FIXME: remove continue when Fox News provider is implemented
+			continue
 		default:
-			log.Error().Str("provider", p).Msg("unknown provider")
+			log.Warn().Str("provider", p).Msg("unknown provider, skipping")
+			continue
+		}
+		videos, err := provider.Search(s.query)
+		if err != nil {
+			return fmt.Errorf("failed to search CNN: %w", err)
+		}
+		log.Debug().Interface("videos", videos).Msg("search results")
+		// write videos to file
+		err = writeVideosToFile(provider.ProviderName(), videos)
+		if err != nil {
+			return fmt.Errorf("failed to write videos to file: %w", err)
 		}
 	}
 	return nil
