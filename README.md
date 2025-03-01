@@ -22,3 +22,34 @@ After it's built, you can execute like this:
 # from root directory
 go run cmd/sleuth/main.go search -q "body found"
 ```
+
+## Audio Transcription
+
+### Requirements:
+1. Python 3.11 (`brew install python@3.11`)
+2. ffmpeg (`brew install ffmpeg`)
+
+### Installation:
+1. Create a virtual environment
+
+```bash
+python3.11 -m venv venv
+```
+
+2. Activate the virtual environment (MacOS/Linux)
+
+```bash
+source venv/bin/activate
+```
+
+3. Upgrade pip version (optional)
+
+```bash
+pip install --upgrade pip
+```
+
+4. Install the dependencies
+
+```bash
+pip install -r requirements.txt
+```
