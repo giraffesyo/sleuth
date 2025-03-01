@@ -15,3 +15,10 @@ After it's built, you can execute like this:
 ```
 ./sleuth search -q "murder cases"
 ```
+
+## Running without building first
+
+```shell
+# from root directory
+go run cmd/sleuth/main.go search -q "body found"
+```
