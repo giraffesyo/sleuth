@@ -10,6 +10,12 @@ import (
 
 func main() {
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-
+	os.Stderr.WriteString(`
+         .-""-.    ____  _     _____ _   _ _____ _   _ 
+ _______/      \  / ___|| |   | ____| | | |_   _| | | |
+|_______        ; \___ \| |   |  _| | | | | | | | |_| |
+        \      /   ___) | |___| |___| |_| | | | |  _  |
+         '-..-'   |____/|_____|_____|\___/  |_| |_| |_|
+		`)
 	cli.RootCmd.Execute()
 }
