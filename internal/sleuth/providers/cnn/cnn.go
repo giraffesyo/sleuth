@@ -1,4 +1,4 @@
-package providers
+package cnn
 
 import (
 	"context"
@@ -9,13 +9,14 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/chromedp"
+	"github.com/giraffesyo/sleuth/internal/sleuth/providers"
 	"github.com/giraffesyo/sleuth/internal/sleuth/videos"
 	"github.com/rs/zerolog/log"
 )
 
 const ProviderCNN = "cnn"
 
-type cnnProviderOption func(*cnnProvider)
+type providerOption func(*cnnProvider)
 
 type cnnProvider struct {
 	context        context.Context
@@ -24,19 +25,19 @@ type cnnProvider struct {
 }
 
 // Used for testing purposes, to allow the test to serve cnn from custom domain.
-func WithCustomSearchUrl(url string) cnnProviderOption {
+func WithCustomSearchUrl(url string) providerOption {
 	return func(p *cnnProvider) {
 		p.searchUrl = url
 	}
 }
 
-func WithoutPagination() cnnProviderOption {
+func WithoutPagination() providerOption {
 	return func(p *cnnProvider) {
 		p.withPagination = false
 	}
 }
 
-func NewCNNProvider(ctx context.Context, providerOptions ...cnnProviderOption) *cnnProvider {
+func NewCNNProvider(ctx context.Context, providerOptions ...providerOption) *cnnProvider {
 	p := &cnnProvider{
 		context:        ctx,
 		searchUrl:      "https://www.cnn.com/search?types=video&q=",
@@ -145,4 +146,4 @@ func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
 }
 
 // ensure that CNN implements the Provider interface
-var _ Provider = &cnnProvider{}
+var _ providers.Provider = &cnnProvider{}

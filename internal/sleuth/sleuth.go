@@ -7,6 +7,8 @@ import (
 	"os"
 
 	"github.com/giraffesyo/sleuth/internal/sleuth/providers"
+	"github.com/giraffesyo/sleuth/internal/sleuth/providers/cnn"
+	"github.com/giraffesyo/sleuth/internal/sleuth/providers/fox"
 	"github.com/giraffesyo/sleuth/internal/sleuth/videos"
 	"github.com/rs/zerolog/log"
 )
@@ -60,10 +62,10 @@ func (s *sleuth) Run() error {
 	for _, p := range s.enabledProviders {
 		var provider providers.Provider
 		switch p {
-		case providers.ProviderCNN:
+		case cnn.ProviderCNN:
 			log.Info().Msg("CNN is enabled")
-			provider = providers.NewCNNProvider(ctx)
-		case providers.ProviderFoxNews:
+			provider = cnn.NewCNNProvider(ctx)
+		case fox.ProviderFoxNews:
 			log.Info().Msg("Fox News is enabled")
 			log.Warn().Msg("Fox News provider is not implemented")
 			// FIXME: remove continue when Fox News provider is implemented
