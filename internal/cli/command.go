@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"os"
+
 	"github.com/giraffesyo/sleuth/internal/cli/search"
 	"github.com/spf13/cobra"
 )
@@ -18,6 +20,19 @@ var RootCmd = &cobra.Command{
 	Short:             short,
 	Version:           "v0.0.1",
 	DisableAutoGenTag: true,
+	Run:               run,
+}
+
+func run(cmd *cobra.Command, args []string) {
+
+	os.Stderr.WriteString(`
+         .-""-.    ____  _     _____ _   _ _____ _   _ 
+ _______/      \  / ___|| |   | ____| | | |_   _| | | |
+|_______        ; \___ \| |   |  _| | | | | | | | |_| |
+        \      /   ___) | |___| |___| |_| | | | |  _  |
+         '-..-'   |____/|_____|_____|\___/  |_| |_| |_|
+		`)
+	cmd.Help()
 }
 
 func init() {
