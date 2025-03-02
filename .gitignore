@@ -1,4 +1,14 @@
 /sleuth
 cnn.json
-.DS_Store
 foxnews.json
+
+output/
+
+# Python
+venv/
+
+*.pyc
+__pycache__/
+
+# System Files
+.DS_Store
