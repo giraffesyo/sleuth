@@ -15,38 +15,30 @@ import (
 
 const ProviderCNN = "cnn"
 
-type providerOption func(*cnnProvider)
+type cnnProviderOption func(*cnnProvider)
 
 type cnnProvider struct {
 	context        context.Context
-	allowedDomains []string
 	searchUrl      string
 	withPagination bool
 }
 
 // Used for testing purposes, to allow the test to serve cnn from custom domain.
-func WithCustomSearchUrl(url string) providerOption {
+func WithCustomSearchUrl(url string) cnnProviderOption {
 	return func(p *cnnProvider) {
 		p.searchUrl = url
-		// parse the domain from the URL
-		domain := strings.TrimPrefix(url, "https://")
-		domain = strings.TrimPrefix(domain, "http://")
-		domain = strings.Split(domain, "/")[0]
-
-		p.allowedDomains = append(p.allowedDomains, domain)
 	}
 }
 
-func WithoutPagination() providerOption {
+func WithoutPagination() cnnProviderOption {
 	return func(p *cnnProvider) {
 		p.withPagination = false
 	}
 }
 
-func NewCNNProvider(ctx context.Context, providerOptions ...providerOption) *cnnProvider {
+func NewCNNProvider(ctx context.Context, providerOptions ...cnnProviderOption) *cnnProvider {
 	p := &cnnProvider{
 		context:        ctx,
-		allowedDomains: []string{"cnn.com", "www.cnn.com"},
 		searchUrl:      "https://www.cnn.com/search?types=video&q=",
 		withPagination: true,
 	}
