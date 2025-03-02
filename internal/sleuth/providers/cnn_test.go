@@ -18,7 +18,7 @@ func TestCNN(t *testing.T) {
 	t.Run("Search", func(t *testing.T) {
 		ctx := t.Context()
 		baseUrl := testServer.URL + "/search.html?q="
-		cnn := NewCNNProvider(ctx, WithCustomSearchUrl(baseUrl))
+		cnn := NewCNNProvider(ctx, WithCustomSearchUrl(baseUrl), WithoutPagination())
 		videos, err := cnn.Search("body found")
 		require.NoError(t, err)
 		require.Len(t, videos, 9)

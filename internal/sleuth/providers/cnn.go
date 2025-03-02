@@ -21,6 +21,7 @@ type cnnProvider struct {
 	context        context.Context
 	allowedDomains []string
 	searchUrl      string
+	withPagination bool
 }
 
 // Used for testing purposes, to allow the test to serve cnn from custom domain.
@@ -36,11 +37,18 @@ func WithCustomSearchUrl(url string) providerOption {
 	}
 }
 
+func WithoutPagination() providerOption {
+	return func(p *cnnProvider) {
+		p.withPagination = false
+	}
+}
+
 func NewCNNProvider(ctx context.Context, providerOptions ...providerOption) *cnnProvider {
 	p := &cnnProvider{
 		context:        ctx,
 		allowedDomains: []string{"cnn.com", "www.cnn.com"},
 		searchUrl:      "https://www.cnn.com/search?types=video&q=",
+		withPagination: true,
 	}
 	for _, o := range providerOptions {
 		o(p)
@@ -53,72 +61,94 @@ func (p *cnnProvider) ProviderName() string {
 }
 
 func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
-	// Create a new chromedp context from the provider's context.
+	// Create a chromedp context using the provider's context.
 	ctx, cancel := chromedp.NewContext(p.context)
 	defer cancel()
 
-	// Set a timeout for the chromedp tasks.
-	ctx, cancel = context.WithTimeout(ctx, 20*time.Second)
+	// Set an overall timeout.
+	ctx, cancel = context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
-	// Build the search URL.
 	escapedQuery := url.QueryEscape(query)
 	searchURL := fmt.Sprintf("%s%s", p.searchUrl, escapedQuery)
 	log.Info().Str("url", searchURL).Msg("Navigating to search URL with chromedp")
 
-	var renderedHTML string
-	// Run chromedp tasks:
-	// 1. Navigate to the search URL.
-	// 2. Wait until at least one search result card is visible.
-	// 3. Extract the outer HTML of the page.
-	tasks := chromedp.Tasks{
+	// Navigate to the search page and wait for the results to load.
+	if err := chromedp.Run(ctx,
 		chromedp.Navigate(searchURL),
 		chromedp.WaitVisible(`div[data-uri^="/_components/card/instances/search-"]`, chromedp.ByQuery),
-		chromedp.OuterHTML("html", &renderedHTML, chromedp.ByQuery),
-	}
-
-	if err := chromedp.Run(ctx, tasks); err != nil {
-		log.Error().Err(err).Msg("chromedp run failed")
+	); err != nil {
 		return nil, err
 	}
 
-	// Parse the rendered HTML using goquery.
-	doc, err := goquery.NewDocumentFromReader(strings.NewReader(renderedHTML))
-	if err != nil {
-		return nil, err
+	var allResults []videos.Video
+
+	// Loop to process each page.
+	for {
+		// Extract the full rendered HTML.
+		var renderedHTML string
+		if err := chromedp.Run(ctx,
+			chromedp.OuterHTML("html", &renderedHTML, chromedp.ByQuery),
+		); err != nil {
+			return nil, err
+		}
+
+		// Parse the HTML using goquery.
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(renderedHTML))
+		if err != nil {
+			return nil, err
+		}
+
+		// Extract video details from each card.
+		doc.Find(`div[data-uri^="/_components/card/instances/search-"]`).Each(func(i int, s *goquery.Selection) {
+			link, exists := s.Find("a.container__link--type-Video").Attr("href")
+			if !exists || link == "" {
+				return
+			}
+			if strings.HasPrefix(link, "/") {
+				link = "https://www.cnn.com" + link
+			}
+
+			title := strings.TrimSpace(s.Find("span.container__headline-text").Text())
+			date := strings.TrimSpace(s.Find("div.container__date").Text())
+			description := strings.TrimSpace(s.Find("div.container__description").Text())
+
+			video := videos.Video{
+				URL:         link,
+				Title:       title,
+				Date:        date,
+				Description: description,
+				Provider:    ProviderCNN,
+			}
+			allResults = append(allResults, video)
+		})
+
+		// Check if a "Next" button is available by verifying if the element with active classes exists.
+		var hasNext bool
+		evaluateJS := `document.querySelector('div.pagination-arrow.pagination-arrow-right.search__pagination-link.text-active') !== null`
+		if err := chromedp.Run(ctx,
+			chromedp.Evaluate(evaluateJS, &hasNext),
+		); err != nil {
+			return nil, err
+		}
+
+		// If no next page or pagination is disabled, break out of the loop.
+		if !hasNext || !p.withPagination {
+			break
+		}
+
+		// Click the "Next" button.
+		if err := chromedp.Run(ctx,
+			chromedp.Click(`div.pagination-arrow.pagination-arrow-right.search__pagination-link.text-active`, chromedp.ByQuery),
+			// Give the page time to load the new results.
+			chromedp.Sleep(2*time.Second),
+			chromedp.WaitVisible(`div[data-uri^="/_components/card/instances/search-"]`, chromedp.ByQuery),
+		); err != nil {
+			return nil, err
+		}
 	}
 
-	results := []videos.Video{}
-	// Iterate over each search result card.
-	doc.Find(`div[data-uri^="/_components/card/instances/search-"]`).Each(func(i int, s *goquery.Selection) {
-		link, exists := s.Find("a.container__link--type-Video").Attr("href")
-		if !exists || link == "" {
-			return
-		}
-		// Ensure the URL is absolute.
-		if strings.HasPrefix(link, "/") {
-			link = "https://www.cnn.com" + link
-		}
-		// Use "/video/" as the heuristic to confirm the result is a video.
-		if !strings.Contains(link, "/video/") {
-			return
-		}
-
-		title := s.Find("span.container__headline-text").Text()
-		date := s.Find("div.container__date").Text()
-		description := s.Find("div.container__description").Text()
-
-		video := videos.Video{
-			URL:         strings.TrimSpace(link),
-			Title:       strings.TrimSpace(title),
-			Date:        strings.TrimSpace(date),
-			Description: strings.TrimSpace(description),
-			Provider:    ProviderCNN,
-		}
-		results = append(results, video)
-	})
-
-	return results, nil
+	return allResults, nil
 }
 
 // ensure that CNN implements the Provider interface
