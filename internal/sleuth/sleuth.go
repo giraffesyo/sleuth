@@ -67,9 +67,7 @@ func (s *sleuth) Run() error {
 			provider = cnn.NewCNNProvider(ctx)
 		case fox.ProviderFoxNews:
 			log.Info().Msg("Fox News is enabled")
-			log.Warn().Msg("Fox News provider is not implemented")
-			// FIXME: remove continue when Fox News provider is implemented
-			continue
+			provider = fox.NewFoxProvider()
 		default:
 			log.Warn().Str("provider", p).Msg("unknown provider, skipping")
 			continue

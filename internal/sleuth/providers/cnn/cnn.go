@@ -113,7 +113,7 @@ func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
 				Description: description,
 				Provider:    p.ProviderName(),
 			}
-			log.Debug().Str("title", title).Str("provider", p.ProviderName()).Str("date", date).Str("url", link).Msg("Found video")
+			log.Debug().Str("title", video.Title).Str("provider", p.ProviderName()).Str("date", video.Date).Str("url", video.URL).Msg("Found video")
 			allResults = append(allResults, video)
 		})
 
