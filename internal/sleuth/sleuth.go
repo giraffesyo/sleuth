@@ -76,7 +76,6 @@ func (s *sleuth) Run() error {
 		if err != nil {
 			return fmt.Errorf("failed to search CNN: %w", err)
 		}
-		log.Debug().Interface("videos", videos).Msg("search results")
 		log.Info().Str("provider", provider.ProviderName()).Int("count", len(videos)).Msg("search results")
 		// write videos to file
 		err = writeVideosToFile(provider.ProviderName(), videos)

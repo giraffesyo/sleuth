@@ -118,8 +118,9 @@ func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
 				Title:       title,
 				Date:        date,
 				Description: description,
-				Provider:    ProviderCNN,
+				Provider:    p.ProviderName(),
 			}
+			log.Debug().Str("title", title).Str("provider", p.ProviderName()).Str("date", date).Str("url", link).Msg("Found video")
 			allResults = append(allResults, video)
 		})
 
@@ -136,7 +137,7 @@ func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
 		if !hasNext || !p.withPagination {
 			break
 		}
-
+		log.Debug().Msg("Going to next page of results")
 		// Click the "Next" button.
 		if err := chromedp.Run(ctx,
 			chromedp.Click(`div.pagination-arrow.pagination-arrow-right.search__pagination-link.text-active`, chromedp.ByQuery),
