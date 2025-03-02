@@ -2,6 +2,8 @@
 cnn.json
 .DS_Store
 
+output/
+
 # Python
 venv/
 

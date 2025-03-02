@@ -11,14 +11,8 @@ def extract_audio(video_path, audio_path):
         video_path (file): Path to video file
         audio_path (file): Path to save audio file
     """
-    # command = f"ffmpeg -i {video_path} -ar 16000 -ac 1 -c:a pcm_s16le {audio_path}"
-    # # -ar 16000: Set audio rate to 16000 Hz
-    # # -ac 1: Set audio channels to 1 (mono)
-
-    # os.system(command)
     try:
         input_video = ffmpeg.input(video_path)
-        # , c:a='pcm_s16le' , ar=16000, ac=1
         output_audio = ffmpeg.output(input_video, audio_path)
         ffmpeg.run(output_audio)
         return output_audio_path
@@ -47,7 +41,7 @@ def find_relevant_timestamps(segments, keywords):
     """Find relevant timestamps for keywords
 
     Args:
-        segments (list): List
+        segments (list): List of audio segments
         keywords (list): List of keywords
     """
     relevant_timestamps = []
@@ -94,10 +88,16 @@ def save_keywords_timestamps(relevant_segments, transcript_path):
 video_path = "output.mp4"  # Replace with path to video file
 transcript_path = "output/transcription_results.txt"
 keywords = [
-    "murder",
-    "DNA",
-    "dna",
+    # "murder",
+    # "DNA",
+    # "dna",
     "body found",
+    "dead",
+    "body",
+    "murderer",
+    "victim",
+    "crime scene",
+    # "criminal",
     "location of the body",
     "discovery site",
 ]  # Keywords to search for in transcript
