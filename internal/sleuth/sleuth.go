@@ -20,9 +20,9 @@ type sleuth struct {
 
 type sleuthOption func(*sleuth)
 
-func WithProvider(p string) sleuthOption {
+func WithProvider(p ...string) sleuthOption {
 	return func(s *sleuth) {
-		s.enabledProviders = append(s.enabledProviders, p)
+		s.enabledProviders = p
 	}
 }
 
