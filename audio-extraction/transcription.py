@@ -2,6 +2,12 @@ import whisper
 import ffmpeg
 import os
 import time
+import requests
+import json
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def extract_audio(video_path, audio_path):
@@ -59,6 +65,70 @@ def find_relevant_timestamps(segments, keywords):
     return relevant_timestamps
 
 
+def llama3(prompt):
+    """Send prompt to LLaMA-3.1 API and return response
+    Currently using Llama3.1 - 8B model
+
+    Args:
+        prompt (str): Prompt to send to LLaMA-3.1
+
+    Returns:
+        str: Response from LLaMA-3.1
+    """
+    # url = "http://localhost:11434/api/chat"
+    url = os.getenv("LLAMA3_URL")
+    if not url:
+        print("LLAMA3_URL environment variable not set")
+        return None
+
+    data = {
+        "model": "llama3.1",
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+    }
+
+    headers = {"Content-Type": "application/json"}
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        return response.json()["message"]["content"]
+    except Exception as e:
+        print(f"Error with LLaMA-3: {e}")
+        return None
+
+
+def detect_relevant_timestamps_with_llama(segments):
+    """Use LLaMA-3 to find timestamps where body discovery is discussed.
+
+    Args:
+        transcript (str): Full transcribed text - not used for now.
+        segments (list): List of transcribed segments with timestamps.
+
+    Returns:
+        list: Relevant timestamps with extracted text.
+    """
+    relevant_timestamps = []
+    for segment in segments:
+        text = segment["text"]
+        prompt = f"Does this text discuss any crime scene, or body found, or dead people? Reply with 'Yes' or 'No'.\nText: {text}"
+        print(f"Prompt: {prompt}")
+        try:
+            response = llama3(prompt)
+            print(f"Response: {response}")
+            if "Yes" in response:
+                relevant_timestamps.append(
+                    {
+                        "start": round(segment["start"], 2),
+                        "end": round(segment["end"], 2),
+                        "text": segment["text"],
+                    }
+                )
+        except Exception as e:
+            print(f"Error detecting relevant timestamps: {e}")
+            continue
+    return relevant_timestamps
+
+
 def convert_timestamp_to_hhmmss(seconds):
     """Convert seconds to MM:SS format
 
@@ -107,7 +177,10 @@ keywords = [
 
 transcript, segments = transcribe_audio(video_path)
 
-relevant_segments = find_relevant_timestamps(segments, keywords)
+# relevant_segments = find_relevant_timestamps(segments, keywords)
+
+# test with LLama
+relevant_segments = detect_relevant_timestamps_with_llama(segments)
 
 # Save output
 save_keywords_timestamps(relevant_segments, transcript_path)

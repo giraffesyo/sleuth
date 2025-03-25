@@ -1,5 +1,8 @@
-openai-whisper==20240930
+python-dotenv==1.0.1
 ffmpeg-python==0.2.0
-spacy==3.8.4
-sentence-transformers==3.4.1
-nltk
+openai-whisper==20240930
+# transformers==4.50.0
+# torch==2.6.0
+# tourchvision==0.21.0
+# accelerate>=0.26.0
+# bitsandbytes==0.42.0
