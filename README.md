@@ -20,16 +20,19 @@ After it's built, you can execute like this:
 
 ```shell
 # from root directory
+export MONGODB_URI="mongodb://localhost:9000/?directConnection=true"
 go run cmd/sleuth/main.go search -q "body found"
 ```
 
 ## Audio Transcription
 
 ### Requirements:
+
 1. Python 3.11 (`brew install python@3.11`)
 2. ffmpeg (`brew install ffmpeg`)
 
 ### Installation:
+
 1. Create a virtual environment
 
 ```bash
