@@ -10,7 +10,6 @@ import (
 	"github.com/giraffesyo/sleuth/internal/sleuth/providers"
 	"github.com/giraffesyo/sleuth/internal/sleuth/providers/cnn"
 	"github.com/giraffesyo/sleuth/internal/sleuth/providers/fox"
-	"github.com/giraffesyo/sleuth/internal/sleuth/videos"
 	"github.com/rs/zerolog/log"
 )
 
@@ -41,9 +40,7 @@ func NewSleuth(options ...sleuthOption) *sleuth {
 	return s
 }
 
-var dbClient *db.Mongo
-
-func writeVideosToFile(provider string, videos []videos.Video) error {
+func writeVideosToFile(provider string, videos []db.Article) error {
 	jsonData, err := json.MarshalIndent(videos, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal videos: %w", err)
@@ -63,8 +60,9 @@ func (s *sleuth) Run() error {
 	}
 
 	// initialize the database client
-	dbClient = db.NewMongo()
-	if err := dbClient.ConnectDatabase("mongodb://localhost:27017"); err != nil {
+
+	uri := db.GetMongoURI()
+	if err := db.Models.ConnectDatabase(uri); err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 

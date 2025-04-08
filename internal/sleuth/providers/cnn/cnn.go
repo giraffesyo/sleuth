@@ -9,8 +9,8 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/chromedp"
+	"github.com/giraffesyo/sleuth/internal/db"
 	"github.com/giraffesyo/sleuth/internal/sleuth/providers"
-	"github.com/giraffesyo/sleuth/internal/sleuth/videos"
 	"github.com/rs/zerolog/log"
 )
 
@@ -53,7 +53,7 @@ func (p *cnnProvider) ProviderName() string {
 	return ProviderCNN
 }
 
-func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
+func (p *cnnProvider) Search(query string) ([]db.Article, error) {
 	// Create a chromedp context using the provider's context.
 	ctx, cancel := chromedp.NewContext(p.context)
 	defer cancel()
@@ -74,7 +74,7 @@ func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
 		return nil, err
 	}
 
-	var allResults []videos.Video
+	var allResults []db.Article
 
 	// Loop to process each page.
 	for {
@@ -106,15 +106,20 @@ func (p *cnnProvider) Search(query string) ([]videos.Video, error) {
 			date := strings.TrimSpace(s.Find("div.container__date").Text())
 			description := strings.TrimSpace(s.Find("div.container__description").Text())
 
-			video := videos.Video{
-				URL:         link,
+			article := db.Article{
+				Url:         link,
 				Title:       title,
 				Date:        date,
 				Description: description,
 				Provider:    p.ProviderName(),
 			}
-			log.Debug().Str("title", video.Title).Str("provider", p.ProviderName()).Str("date", video.Date).Str("url", video.URL).Msg("Found video")
-			allResults = append(allResults, video)
+			err := db.Models.CreateArticle(p.context, &article)
+			if err != nil {
+				log.Error().Err(err).Msg("Failed to save video to database")
+				return
+			}
+			log.Debug().Str("title", article.Title).Str("provider", p.ProviderName()).Str("date", article.Date).Str("url", article.Url).Msg("Found video")
+			allResults = append(allResults, article)
 		})
 
 		// Check if a "Next" button is available by verifying if the element with active classes exists.

@@ -25,7 +25,7 @@ func (c *Mongo) CreateArticle(ctx context.Context, article *Article) error {
 	defer cancel()
 
 	// Insert the article document into the collection.
-	result, err := c.ArticlesCollection().InsertOne(ctx, article)
+	result, err := c.articles().InsertOne(ctx, article)
 	if err != nil {
 		return err
 	}

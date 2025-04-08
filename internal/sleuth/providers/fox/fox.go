@@ -9,8 +9,8 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/chromedp"
+	"github.com/giraffesyo/sleuth/internal/db"
 	"github.com/giraffesyo/sleuth/internal/sleuth/providers"
-	"github.com/giraffesyo/sleuth/internal/sleuth/videos"
 	"github.com/rs/zerolog/log"
 )
 
@@ -50,7 +50,7 @@ func (p *foxProvider) ProviderName() string {
 	return ProviderFoxNews
 }
 
-func (p *foxProvider) Search(query string) ([]videos.Video, error) {
+func (p *foxProvider) Search(query string) ([]db.Article, error) {
 	// Create a chromedp context.
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
@@ -73,7 +73,7 @@ func (p *foxProvider) Search(query string) ([]videos.Video, error) {
 
 	// Use a map to deduplicate articles by URL.
 	seen := make(map[string]struct{})
-	var allResults []videos.Video
+	var allResults []db.Article
 
 	// extractArticles parses the provided HTML and appends new articles.
 	extractArticles := func(html string) {
@@ -103,15 +103,20 @@ func (p *foxProvider) Search(query string) ([]videos.Video, error) {
 			// Extract description from the <p class="dek">.
 			description := strings.TrimSpace(s.Find("div.content p.dek").Text())
 
-			video := videos.Video{
-				URL:         link,
+			article := db.Article{
+				Url:         link,
 				Title:       title,
 				Date:        date,
 				Description: description,
 				Provider:    ProviderFoxNews,
 			}
-			log.Debug().Str("title", video.Title).Str("provider", p.ProviderName()).Str("date", video.Date).Str("url", video.URL).Msg("Found video")
-			allResults = append(allResults, video)
+			err := db.Models.CreateArticle(ctx, &article)
+			if err != nil {
+				log.Error().Err(err).Msg("failed to create article in database")
+				return
+			}
+			log.Debug().Str("title", article.Title).Str("provider", p.ProviderName()).Str("date", article.Date).Str("url", article.Url).Msg("Found video")
+			allResults = append(allResults, article)
 		})
 	}
 

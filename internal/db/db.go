@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -10,15 +11,25 @@ import (
 )
 
 type Mongo struct {
-	Client *mongo.Client
+	client *mongo.Client
 }
 
-func NewMongo() *Mongo {
-	return &Mongo{}
+var Models *Mongo
+
+func GetMongoURI() string {
+	uri := os.Getenv("MONGODB_URI")
+	if uri == "" {
+		log.Fatal().Msg("MONGODB_URI environment variable is not set")
+	}
+	return uri
 }
 
-func (c *Mongo) ArticlesCollection() *mongo.Collection {
-	return c.Client.Database("sleuth").Collection("articles")
+func init() {
+	Models = &Mongo{}
+}
+
+func (c *Mongo) articles() *mongo.Collection {
+	return c.client.Database("sleuth").Collection("articles")
 }
 
 func (c *Mongo) ConnectDatabase(uri string) error {
@@ -33,7 +44,7 @@ func (c *Mongo) ConnectDatabase(uri string) error {
 		return fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
-	c.Client = client
+	c.client = client
 
 	log.Info().Msg("Connected to MongoDB!")
 	return nil

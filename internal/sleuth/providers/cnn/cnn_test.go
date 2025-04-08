@@ -24,7 +24,7 @@ func TestCNN(t *testing.T) {
 		require.Len(t, videos, 9)
 
 		require.Equal(t, "Passengers say cabin crew put a dead body next to them on flight", videos[0].Title)
-		require.Equal(t, "https://www.cnn.com/2025/02/26/world/video/body-on-plane-qatar-airways-digvid", videos[0].URL)
+		require.Equal(t, "https://www.cnn.com/2025/02/26/world/video/body-on-plane-qatar-airways-digvid", videos[0].Url)
 		require.Equal(t, "Feb 26, 2025", videos[0].Date)
 		t.Log(videos)
 
