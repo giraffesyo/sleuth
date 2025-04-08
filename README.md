@@ -16,6 +16,18 @@ After it's built, you can execute like this:
 ./sleuth search -q "murder cases"
 ```
 
+## Starting the database
+
+From the root directory, run
+
+```shell
+docker compose up -d
+```
+
+Connecting to the mongo database can be done via tools like [MongoDB Compass](https://www.mongodb.com/products/tools/compass) or using `mongosh`
+
+i.e. `mongosh mongodb://localhost:9000/?directConnection=true`
+
 ## Running without building first
 
 ```shell
