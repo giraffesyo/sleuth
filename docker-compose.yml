@@ -1,0 +1,8 @@
+version: '3.9'
+services:
+  mongo:
+    image: mongo:8.0.6
+    volumes:
+      - ./data/db:/data/db
+    ports:
+      - 9000:27017
