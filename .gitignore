@@ -12,3 +12,5 @@ __pycache__/
 
 # System Files
 .DS_Store
+# mongo database
+data
