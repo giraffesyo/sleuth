@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/giraffesyo/sleuth/internal/db"
 	"github.com/giraffesyo/sleuth/internal/sleuth/providers"
 	"github.com/giraffesyo/sleuth/internal/sleuth/providers/cnn"
 	"github.com/giraffesyo/sleuth/internal/sleuth/providers/fox"
@@ -40,6 +41,8 @@ func NewSleuth(options ...sleuthOption) *sleuth {
 	return s
 }
 
+var dbClient *db.Mongo
+
 func writeVideosToFile(provider string, videos []videos.Video) error {
 	jsonData, err := json.MarshalIndent(videos, "", "  ")
 	if err != nil {
@@ -58,6 +61,13 @@ func (s *sleuth) Run() error {
 	if s.query == "" {
 		return ErrEmptySearchQuery
 	}
+
+	// initialize the database client
+	dbClient = db.NewMongo()
+	if err := dbClient.ConnectDatabase("mongodb://localhost:27017"); err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+
 	log.Info().Str("query", s.query).Msg("searching for news articles")
 	for _, p := range s.enabledProviders {
 		var provider providers.Provider
