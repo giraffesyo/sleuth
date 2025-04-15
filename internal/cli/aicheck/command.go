@@ -2,6 +2,7 @@ package aicheck
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/giraffesyo/sleuth/internal/db"
 	"github.com/rs/zerolog/log"
@@ -89,8 +90,7 @@ Respond with "true" or "false" depending on if the video should be downloaded (t
 	}
 	// if theres more than 5 letters in the response, its probably not a valid response
 	if len(response) > len("false") {
-		log.Err(err).Str("response", response).Msg("response is too long, not a valid response")
-		return false, err
+		return false, fmt.Errorf("response is too long, not a valid response, got %s", response)
 	}
 	// check if response is true or false
 	return response == "true", nil
