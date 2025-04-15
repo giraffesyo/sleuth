@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 
+	"github.com/giraffesyo/sleuth/internal/cli/aicheck"
 	"github.com/giraffesyo/sleuth/internal/cli/search"
 	"github.com/spf13/cobra"
 )
@@ -37,4 +38,5 @@ func run(cmd *cobra.Command, args []string) {
 
 func init() {
 	RootCmd.AddCommand(search.Cmd)
+	RootCmd.AddCommand(aicheck.Cmd)
 }

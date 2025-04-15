@@ -12,6 +12,7 @@ import (
 	"github.com/giraffesyo/sleuth/internal/db"
 	"github.com/giraffesyo/sleuth/internal/sleuth/providers"
 	"github.com/rs/zerolog/log"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const ProviderFoxNews = "foxnews"
@@ -104,15 +105,21 @@ func (p *foxProvider) Search(query string) ([]db.Article, error) {
 			description := strings.TrimSpace(s.Find("div.content p.dek").Text())
 
 			article := db.Article{
-				Url:         link,
-				Title:       title,
-				Date:        date,
-				Description: description,
-				Provider:    ProviderFoxNews,
+				Url:                               link,
+				Title:                             title,
+				Date:                              date,
+				Description:                       description,
+				AiHasCheckedIfShouldDownloadVideo: false,
+				AiSuggestsDownloadingVideo:        false,
+				Provider:                          ProviderFoxNews,
 			}
 			err := db.Models.CreateArticle(ctx, &article)
 			if err != nil {
-				log.Error().Err(err).Msg("failed to create article in database")
+				if mongo.IsDuplicateKeyError(err) {
+					log.Warn().Str("url", article.Url).Msg("video already exists in database, skipping")
+				} else {
+					log.Error().Err(err).Msg("Failed to save video to database")
+				}
 				return
 			}
 			log.Debug().Str("title", article.Title).Str("provider", p.ProviderName()).Str("date", article.Date).Str("url", article.Url).Msg("Found video")
