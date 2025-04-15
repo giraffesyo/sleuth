@@ -2,19 +2,24 @@ package db
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Article represents a news article model.
 type Article struct {
-	Id          primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"` // MongoDB document ID
-	Title       string             `bson:"title" json:"title"`
-	Url         string             `bson:"url" json:"url"`
-	Date        string             `bson:"date" json:"date"`
-	Description string             `bson:"description" json:"description"`
-	Provider    string             `bson:"provider" json:"provider"`
+	Id                                primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"` // MongoDB document ID
+	Title                             string             `bson:"title" json:"title"`
+	Url                               string             `bson:"url" json:"url"`
+	Date                              string             `bson:"date" json:"date"`
+	Description                       string             `bson:"description" json:"description"`
+	Provider                          string             `bson:"provider" json:"provider"`
+	AiHasCheckedIfShouldDownloadVideo bool               `bson:"aiHasCheckedIfShouldDownloadVideo" json:"AiHasCheckedIfShouldDownloadVideo"`
+	AiSuggestsDownloadingVideo        bool               `bson:"aiSuggestsDownloadingVideo" json:"AiSuggestsDownloadingVideo"`
 }
 
 // CreateArticle inserts a new article into the provided MongoDB collection.
@@ -35,27 +40,80 @@ func (c *Mongo) CreateArticle(ctx context.Context, article *Article) error {
 	return nil
 }
 
-// // FindArticleByID searches for an article by its MongoDB ObjectID.
-// // It returns the article if found, or an error if no document matches the given ID.
-// func (c *Mongo) FindArticleByID(ctx context.Context, id primitive.ObjectID) (*Article, error) {
-// 	// Set a timeout for the operation.
-// 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-// 	defer cancel()
+// FindArticleByID searches for an article by its MongoDB ObjectID.
+// It returns the article if found, or an error if no document matches the given ID.
+func (c *Mongo) FindArticleByUrl(ctx context.Context, url string) (*Article, error) {
+	// Set a timeout for the operation.
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
-// 	var article Article
-// 	filter := bson.M{"_id": id}
+	var article Article
+	filter := bson.M{"url": url}
 
-// 	// Find the document with the matching _id.
-// 	err := c.ArticlesCollection().FindOne(ctx, filter).Decode(&article)
-// 	if err != nil {
-// 		if err == mongo.ErrNoDocuments {
-// 			return nil, errors.New("article not found")
-// 		}
-// 		return nil, err
-// 	}
+	// Find the document with the matching url.
+	err := c.articles().FindOne(ctx, filter).Decode(&article)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, errors.New("article not found")
+		}
+		return nil, err
+	}
 
-// 	return &article, nil
-// }
+	return &article, nil
+}
+
+// FindAllArticlesNotChecked searches for all articles that have not been checked by AI.
+// It returns a slice of articles and an error if the operation fails.
+func (c *Mongo) FindAllArticlesNotChecked(ctx context.Context) ([]*Article, error) {
+	// Set a timeout for the operation.
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	var articles []*Article
+	filter := bson.M{"aiHasCheckedIfShouldDownloadVideo": false}
+
+	// Find all documents that match the filter.
+	cursor, err := c.articles().Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	// Decode each document into an Article struct.
+	for cursor.Next(ctx) {
+		var article Article
+		if err := cursor.Decode(&article); err != nil {
+			return nil, err
+		}
+		articles = append(articles, &article)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return articles, nil
+}
+
+// UpdateArticle updates an article in the collection by its MongoDB ObjectID.
+// It returns an error if no article is found or if the operation fails.
+func (c *Mongo) UpdateArticle(ctx context.Context, id primitive.ObjectID, update bson.M) error {
+	// Set a timeout for the operation.
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"_id": id}
+
+	// Update the document matching the given _id.
+	result, err := c.articles().UpdateOne(ctx, filter, bson.M{"$set": update})
+	if err != nil {
+		return err
+	}
+	if result.MatchedCount == 0 {
+		return errors.New("no article found to update")
+	}
+	return nil
+}
 
 // // DeleteArticle removes an article from the collection by its MongoDB ObjectID.
 // // It returns an error if no article is found or if the operation fails.
