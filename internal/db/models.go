@@ -144,6 +144,36 @@ func (c *Mongo) UpdateArticle(ctx context.Context, id primitive.ObjectID, update
 	return nil
 }
 
+// FindArticlesByFilter searches for articles based on a filter.
+// It returns a slice of articles that match the filter criteria.
+func (c *Mongo) FindArticlesByFilter(ctx context.Context, filter bson.M) ([]*Article, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var articles []*Article
+
+	cursor, err := c.articles().Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	// Decode each document into an Article struct
+	for cursor.Next(ctx) {
+		var article Article
+		if err := cursor.Decode(&article); err != nil {
+			return nil, err
+		}
+		articles = append(articles, &article)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return articles, nil
+}
+
 // // DeleteArticle removes an article from the collection by its MongoDB ObjectID.
 // // It returns an error if no article is found or if the operation fails.
 // func (c *Mongo) DeleteArticle(ctx context.Context, id primitive.ObjectID) error {

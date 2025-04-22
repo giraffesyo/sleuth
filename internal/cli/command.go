@@ -5,6 +5,7 @@ import (
 
 	"github.com/giraffesyo/sleuth/internal/cli/aicheck"
 	"github.com/giraffesyo/sleuth/internal/cli/csv"
+	downloadVideos "github.com/giraffesyo/sleuth/internal/cli/download_videos"
 	"github.com/giraffesyo/sleuth/internal/cli/search"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +32,7 @@ func run(cmd *cobra.Command, args []string) {
          .-""-.    ____  _     _____ _   _ _____ _   _ 
  _______/      \  / ___|| |   | ____| | | |_   _| | | |
 |_______        ; \___ \| |   |  _| | | | | | | | |_| |
-        \      /   ___) | |___| |___| |_| | | | |  _  |
+        \      /   ___) | |___| |___| |_| | | |  _  |
          '-..-'   |____/|_____|_____|\___/  |_| |_| |_|
 		`)
 	cmd.Help()
@@ -40,6 +41,6 @@ func run(cmd *cobra.Command, args []string) {
 func init() {
 	RootCmd.AddCommand(search.Cmd)
 	RootCmd.AddCommand(aicheck.Cmd)
-	RootCmd.AddCommand(csv.Cmd) // Add this line
-
+	RootCmd.AddCommand(csv.Cmd)
+	RootCmd.AddCommand(downloadVideos.Cmd)
 }
