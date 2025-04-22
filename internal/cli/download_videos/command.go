@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
-
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/chromedp/chromedp"
 	"github.com/giraffesyo/sleuth/internal/db"
@@ -24,6 +24,8 @@ var (
 	short = "Download videos that have been approved by AI check"
 	// Directory to store downloaded videos
 	downloadDir = "./downloads"
+	// Number of concurrent downloads
+	concurrentDownloads = 5
 )
 
 var Cmd = &cobra.Command{
@@ -34,7 +36,7 @@ var Cmd = &cobra.Command{
 
 func init() {
 	// Create downloads directory if it doesn't exist
-	if err := os.MkdirAll(downloadDir, 0755); err != nil {
+	if err := os.MkdirAll(downloadDir, 0700); err != nil {
 		log.Fatal().Err(err).Msg("failed to create downloads directory")
 	}
 }
@@ -63,33 +65,62 @@ func run(cmd *cobra.Command, args []string) {
 
 	log.Info().Int("count", len(articles)).Msg("found videos to download")
 
+	if len(articles) == 0 {
+		log.Info().Msg("no videos to download")
+		return
+	}
+
+	// Create a wait group to wait for all processing to complete
+	var wg sync.WaitGroup
+	// Create a semaphore to limit concurrent processing
+	sem := make(chan struct{}, concurrentDownloads)
+
+	// Process videos in parallel (URL determination AND downloading)
 	for _, article := range articles {
+		// Add to wait group before starting goroutine
+		wg.Add(1)
 
-		err := determineVideoUrl(ctx, article)
-		if err != nil {
-			log.Err(err).Str("url", article.Url).Msg("failed to determine video URL, skipping")
-			continue
-		}
-		// Check if the video has already been downloaded
-		if _, err := os.Stat(article.VideoPath); err == nil {
-			log.Info().Str("url", article.Url).Str("path", article.VideoPath).Msg("video already downloaded, skipping")
-			continue
-		}
-		log.Info().Str("url", article.Url).Str("title", article.Title).Msg("downloading video")
+		// Start a goroutine for each article
+		go func(article *db.Article) {
+			defer wg.Done()
 
-		switch article.Provider {
-		case "cnn":
-			videoPath, err := downloadVideo(article, article.VideoUrl)
+			// Acquire semaphore
+			sem <- struct{}{}
+			defer func() { <-sem }() // Release semaphore when done
+
+			log.Info().Str("url", article.Url).Str("title", article.Title).Msg("processing video")
+
+			err := determineVideoUrl(ctx, article)
 			if err != nil {
-				log.Err(err).Str("url", article.Url).Msg("failed to download video, skipping")
-				continue
+				log.Err(err).Str("url", article.Url).Msg("failed to determine video URL")
+				return
 			}
 
-			log.Info().Str("url", article.Url).Str("path", videoPath).Msg("successfully downloaded video and updated database")
-		default:
-			log.Warn().Str("provider", article.Provider).Msg("unsupported provider for video download")
-		}
+			// Skip articles that already have been downloaded
+			if _, err := os.Stat(article.VideoPath); err == nil {
+				log.Info().Str("url", article.Url).Str("path", article.VideoPath).Msg("video already downloaded, skipping")
+				return
+			}
+
+			switch article.Provider {
+			case "cnn":
+				// Download the video
+				videoPath, err := downloadVideo(article, article.VideoUrl)
+				if err != nil {
+					log.Err(err).Str("url", article.Url).Msg("failed to download video")
+					return
+				}
+				log.Info().Str("url", article.Url).Str("path", videoPath).Msg("successfully downloaded video")
+			default:
+				log.Warn().Str("provider", article.Provider).Msg("unsupported provider for video download")
+				return
+			}
+		}(article)
 	}
+
+	// Wait for all processing to complete
+	wg.Wait()
+	log.Info().Msg("all processing completed")
 }
 
 // getVideoFilePath returns the path where the video file for an article should be stored
