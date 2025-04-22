@@ -2,13 +2,16 @@
 cnn.json
 foxnews.json
 
-output/
+outputs/
 
 # Python
 venv/
 
 *.pyc
 __pycache__/
+
+.env
+.env.*.local
 
 # System Files
 .DS_Store
@@ -18,3 +21,9 @@ data
 
 # videos
 downloads
+
+# audios
+audios
+
+# json
+timestamps
