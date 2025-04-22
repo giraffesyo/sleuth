@@ -5,24 +5,26 @@ from transcription import transcribe_audio, extract_audio
 from llama import detect_body_discovery_events_full_context
 
 
-def process_video(video_path, output_dir="output"):
+def process_video(video_path, json_output_dir="timestamps", audio_output_dir="audio"):
     """Process video file to extract audio, transcribe it, and detect body discovery events.
 
     Args:
         video_path (str): Path to the video file.
-        output_dir (str): Directory to save the output files.
+        json_output_dir (str): Directory to save the output files.
     """
     # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(json_output_dir, exist_ok=True)
 
     # Get the video filename without extension
     # This is used to create the audio filename
     # Also, this filename is referred to the video Id in the database
     video_filename = os.path.splitext(os.path.basename(video_path))[0]
+    
+    # Create audio filename in the audio output directory
     audio_filename = f"{video_filename}.wav"
 
     # Extract audio from video
-    audio_path = os.path.join(output_dir, audio_filename)
+    audio_path = os.path.join(audio_output_dir, audio_filename)
     if not os.path.exists(audio_path):
         print(f"Extracting audio from {video_path} to {audio_path}")
         # Extract audio from video
@@ -35,8 +37,8 @@ def process_video(video_path, output_dir="output"):
     structured_results = detect_body_discovery_events_full_context(segments)
 
     # Save structured results to JSON file with the same name as the video
-    structured_results_filename = f"{video_filename}_results.json"
-    structured_results_path = os.path.join(output_dir, structured_results_filename)
+    structured_results_filename = f"{video_filename}.json"
+    structured_results_path = os.path.join(json_output_dir, structured_results_filename)
     with open(structured_results_path, "w") as f:
         json.dump(structured_results, f, indent=2)
     print(f"Structured results saved to {structured_results_path}")
