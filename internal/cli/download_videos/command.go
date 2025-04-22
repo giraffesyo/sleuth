@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/chromedp/chromedp"
@@ -142,13 +141,9 @@ func downloadCnnVideo(article *db.Article) error {
 	videoURL := videoData.Files[0].FileUri
 	log.Info().Str("videoURL", videoURL).Msg("found video URL")
 
-	// Create a sanitized filename from the headline or ID
-	filename := videoData.Headline
-	if filename == "" {
-		filename = videoData.Id
-	}
-	// Sanitize filename
-	filename = sanitizeFilename(filename)
+	// Use the article's database ID as the filename
+	filename := article.Id.Hex()
+
 	// Extract file extension from the URL
 	fileExt := filepath.Ext(videoURL)
 	if fileExt == "" {
@@ -181,23 +176,4 @@ func downloadCnnVideo(article *db.Article) error {
 
 	log.Info().Str("path", fullPath).Msg("video downloaded successfully")
 	return nil
-}
-
-// sanitizeFilename removes or replaces characters that are invalid in filenames
-func sanitizeFilename(filename string) string {
-	// Replace invalid characters with underscores
-	invalidChars := []string{"/", "\\", ":", "*", "?", "\"", "<", ">", "|"}
-	result := filename
-
-	for _, char := range invalidChars {
-		result = strings.ReplaceAll(result, char, "_")
-	}
-
-	// Trim spaces and limit length
-	result = strings.TrimSpace(result)
-	if len(result) > 100 {
-		result = result[:100]
-	}
-
-	return result
 }
