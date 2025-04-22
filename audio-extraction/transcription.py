@@ -175,12 +175,17 @@ def detect_body_discovery_events_full_context(segments):
     {formatted_text}
     """
 
+    response = llama3(prompt)
     try:
-        response = llama3(prompt)
-        print("LLaMA Structured Response:\n", response)
+        # print("LLaMA Structured Response:\n", response)
         # Try to parse response safely
         structured_results = json.loads(response)
         return structured_results
+    except json.JSONDecodeError:
+        # if the model still wraps it, try to strip
+        start = response.find("[")
+        end = response.rfind("]")
+        return json.loads(response[start : end+1])
     except Exception as e:
         print("Error parsing LLaMA structured output:", e)
         return []
