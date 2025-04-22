@@ -20,7 +20,7 @@ var Models *Mongo
 func GetMongoURI() string {
 	uri := os.Getenv("MONGODB_URI")
 	if uri == "" {
-		log.Fatal().Msg("MONGODB_URI environment variable is not set")
+		uri = "mongodb://localhost:9000/?directConnection=true"
 	}
 	return uri
 }

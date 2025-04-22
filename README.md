@@ -28,13 +28,17 @@ Connecting to the mongo database can be done via tools like [MongoDB Compass](ht
 
 i.e. `mongosh mongodb://localhost:9000/?directConnection=true`
 
+The default connection string is above, but can be overriden like so:
+
+```
+export MONGODB_URI="mongodb://localhost:9000/?directConnection=true"
+```
+
 ## Running without building first
 
 ### Searching (adding to dataset)
 
 ```shell
-# from root directory
-export MONGODB_URI="mongodb://localhost:9000/?directConnection=true"
 go run cmd/sleuth/main.go search -q "body found"
 ```
 
@@ -42,9 +46,7 @@ go run cmd/sleuth/main.go search -q "body found"
 
 AI Check will determine if the video should be downloaded using llama LLM
 
-```
-# from root directory
-export MONGODB_URI="mongodb://localhost:9000/?directConnection=true"
+```shell
 go run cmd/sleuth/main.go aicheck
 ```
 
@@ -52,11 +54,13 @@ go run cmd/sleuth/main.go aicheck
 
 CSV will export the dataset to CSV format, by default to standard out, you can also use `-o` flag to print it to a specified file.
 
-```
-# from root directory
-export MONGODB_URI="mongodb://localhost:9000/?directConnection=true"
+```shell
 go run cmd/sleuth/main.go csv
-# or
+```
+
+or
+
+```
 go run cmd/sleuth/main.go csv -o output.csv
 ```
 
