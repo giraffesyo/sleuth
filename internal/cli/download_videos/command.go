@@ -62,6 +62,13 @@ func run(cmd *cobra.Command, args []string) {
 	log.Info().Int("count", len(articles)).Msg("found videos to download")
 
 	for _, article := range articles {
+		// Check if file already exists
+		videoPath := getVideoFilePath(article, ".mp4") // Default extension
+		if _, err := os.Stat(videoPath); err == nil {
+			log.Info().Str("url", article.Url).Str("path", videoPath).Msg("video already downloaded, skipping")
+			continue
+		}
+
 		log.Info().Str("url", article.Url).Str("title", article.Title).Msg("downloading video")
 
 		switch article.Provider {
@@ -76,6 +83,13 @@ func run(cmd *cobra.Command, args []string) {
 			log.Warn().Str("provider", article.Provider).Msg("unsupported provider for video download")
 		}
 	}
+}
+
+// getVideoFilePath returns the path where the video file for an article should be stored
+func getVideoFilePath(article *db.Article, extension string) string {
+	// Use the article's database ID as the filename
+	filename := article.Id.Hex() + extension
+	return filepath.Join(downloadDir, filename)
 }
 
 // CnnVideoResponse represents the JSON response from CNN's video API
@@ -141,17 +155,14 @@ func downloadCnnVideo(article *db.Article) error {
 	videoURL := videoData.Files[0].FileUri
 	log.Info().Str("videoURL", videoURL).Msg("found video URL")
 
-	// Use the article's database ID as the filename
-	filename := article.Id.Hex()
-
 	// Extract file extension from the URL
 	fileExt := filepath.Ext(videoURL)
 	if fileExt == "" {
 		fileExt = ".mp4" // Default extension
 	}
 
-	// Complete filename with path
-	fullPath := filepath.Join(downloadDir, filename+fileExt)
+	// Get the complete file path
+	fullPath := getVideoFilePath(article, fileExt)
 	log.Info().Str("path", fullPath).Msg("downloading video to file")
 
 	// Download the video file
