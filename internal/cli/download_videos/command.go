@@ -62,10 +62,28 @@ func run(cmd *cobra.Command, args []string) {
 	log.Info().Int("count", len(articles)).Msg("found videos to download")
 
 	for _, article := range articles {
-		// Check if file already exists
+		// Check if the video has already been downloaded
+		if article.VideoPath != "" {
+			// Check if the file exists at the stored path
+			if _, err := os.Stat(article.VideoPath); err == nil {
+				log.Info().Str("url", article.Url).Str("path", article.VideoPath).Msg("video already downloaded, skipping")
+				continue
+			}
+			// If file doesn't exist but path is recorded, log a warning
+			log.Warn().Str("url", article.Url).Str("path", article.VideoPath).Msg("video path recorded in DB but file not found, will download again")
+		}
+
+		// If no video path in DB or file doesn't exist, check if default filename exists
 		videoPath := getVideoFilePath(article, ".mp4") // Default extension
 		if _, err := os.Stat(videoPath); err == nil {
-			log.Info().Str("url", article.Url).Str("path", videoPath).Msg("video already downloaded, skipping")
+			log.Info().Str("url", article.Url).Str("path", videoPath).Msg("video exists at default path, skipping")
+			// Update the database with the path
+			update := bson.M{
+				"videoPath": videoPath,
+			}
+			if err := db.Models.UpdateArticle(ctx, article.Id, update); err != nil {
+				log.Warn().Err(err).Str("url", article.Url).Msg("failed to update article with video path")
+			}
 			continue
 		}
 
@@ -73,12 +91,22 @@ func run(cmd *cobra.Command, args []string) {
 
 		switch article.Provider {
 		case "cnn":
-			err := downloadCnnVideo(article)
+			videoPath, videoUrl, err := downloadCnnVideo(ctx, article)
 			if err != nil {
 				log.Err(err).Str("url", article.Url).Msg("failed to download video, skipping")
 				continue
 			}
-			log.Info().Str("url", article.Url).Msg("successfully downloaded video")
+
+			// Update the database with the video path and URL
+			update := bson.M{
+				"videoPath": videoPath,
+				"videoUrl":  videoUrl,
+			}
+			if err := db.Models.UpdateArticle(ctx, article.Id, update); err != nil {
+				log.Warn().Err(err).Str("url", article.Url).Msg("failed to update article with video path")
+			}
+
+			log.Info().Str("url", article.Url).Str("path", videoPath).Msg("successfully downloaded video and updated database")
 		default:
 			log.Warn().Str("provider", article.Provider).Msg("unsupported provider for video download")
 		}
@@ -102,58 +130,72 @@ type CnnVideoResponse struct {
 }
 
 // downloadCnnVideo downloads a video from a CNN article
-func downloadCnnVideo(article *db.Article) error {
-	// Create a new ChromeDP context
-	ctx, cancel := chromedp.NewContext(context.Background())
-	defer cancel()
+// Returns the path to the downloaded video file and the video URL
+func downloadCnnVideo(ctx context.Context, article *db.Article) (string, string, error) {
+	var videoURL string
 
-	// Set a timeout
-	ctx, cancel = context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
+	// Check if we already have the video URL in the database
+	if article.VideoUrl != "" {
+		log.Info().Str("url", article.Url).Msg("using stored video URL from database")
+		videoURL = article.VideoUrl
+	} else {
+		// No stored URL, need to extract it from the page
+		log.Info().Str("url", article.Url).Msg("no stored video URL, extracting from page")
 
-	log.Info().Str("url", article.Url).Msg("navigating to article URL with ChromeDP")
+		// Create a new ChromeDP context for browser automation
+		chromectx, cancel := chromedp.NewContext(ctx)
+		defer cancel()
 
-	var videoUri string
-	// Navigate to the page and extract the video URI using JavaScript
-	err := chromedp.Run(ctx,
-		chromedp.Navigate(article.Url),
-		// Wait for the video element to be present
-		chromedp.WaitVisible(`div[data-video-id]`, chromedp.ByQuery),
-		// Execute JavaScript to get the URI
-		chromedp.Evaluate(`document.querySelector("div[data-video-id]").dataset.uri`, &videoUri),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to extract video URI using ChromeDP: %w", err)
+		// Set a timeout
+		chromectx, cancel = context.WithTimeout(chromectx, 60*time.Second)
+		defer cancel()
+
+		log.Info().Str("url", article.Url).Msg("navigating to article URL with ChromeDP")
+
+		var videoUri string
+		// Navigate to the page and extract the video URI using JavaScript
+		err := chromedp.Run(chromectx,
+			chromedp.Navigate(article.Url),
+			// Wait for the video element to be present
+			chromedp.WaitVisible(`div[data-video-id]`, chromedp.ByQuery),
+			// Execute JavaScript to get the URI
+			chromedp.Evaluate(`document.querySelector("div[data-video-id]").dataset.uri`, &videoUri),
+		)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to extract video URI using ChromeDP: %w", err)
+		}
+
+		if videoUri == "" {
+			return "", "", fmt.Errorf("couldn't find video URI in the article page")
+		}
+		log.Info().Str("videoUri", videoUri).Msg("found video URI")
+
+		// Construct the API URL
+		apiURL := fmt.Sprintf("https://fave.api.cnn.io/v1/video?id=111111&stellarUri=%s", videoUri)
+		log.Info().Str("apiURL", apiURL).Msg("fetching video metadata")
+
+		// Fetch the video metadata
+		videoResp, err := http.Get(apiURL)
+		if err != nil {
+			return "", "", fmt.Errorf("failed to fetch video metadata: %w", err)
+		}
+		defer videoResp.Body.Close()
+
+		// Parse the JSON response
+		var videoData CnnVideoResponse
+		if err := json.NewDecoder(videoResp.Body).Decode(&videoData); err != nil {
+			return "", "", fmt.Errorf("failed to decode video metadata: %w", err)
+		}
+
+		// Check if we have a file URL
+		if len(videoData.Files) == 0 {
+			return "", "", fmt.Errorf("no video files found in the metadata")
+		}
+
+		// Get the direct MP4 URL
+		videoURL = videoData.Files[0].FileUri
+		log.Info().Str("videoURL", videoURL).Msg("found video URL")
 	}
-
-	if videoUri == "" {
-		return fmt.Errorf("couldn't find video URI in the article page")
-	}
-	log.Info().Str("videoUri", videoUri).Msg("found video URI")
-
-	// Construct the API URL
-	apiURL := fmt.Sprintf("https://fave.api.cnn.io/v1/video?id=111111&stellarUri=%s", videoUri)
-	log.Info().Str("apiURL", apiURL).Msg("fetching video metadata")
-
-	// Fetch the video metadata
-	videoResp, err := http.Get(apiURL)
-	if err != nil {
-		return fmt.Errorf("failed to fetch video metadata: %w", err)
-	}
-	defer videoResp.Body.Close()
-
-	// Parse the JSON response
-	var videoData CnnVideoResponse
-	if err := json.NewDecoder(videoResp.Body).Decode(&videoData); err != nil {
-		return fmt.Errorf("failed to decode video metadata: %w", err)
-	}
-
-	// Check if we have a file URL
-	if len(videoData.Files) == 0 {
-		return fmt.Errorf("no video files found in the metadata")
-	}
-	videoURL := videoData.Files[0].FileUri
-	log.Info().Str("videoURL", videoURL).Msg("found video URL")
 
 	// Extract file extension from the URL
 	fileExt := filepath.Ext(videoURL)
@@ -168,23 +210,23 @@ func downloadCnnVideo(article *db.Article) error {
 	// Download the video file
 	videoFileResp, err := http.Get(videoURL)
 	if err != nil {
-		return fmt.Errorf("failed to download video file: %w", err)
+		return "", videoURL, fmt.Errorf("failed to download video file: %w", err)
 	}
 	defer videoFileResp.Body.Close()
 
 	// Create the output file
 	outFile, err := os.Create(fullPath)
 	if err != nil {
-		return fmt.Errorf("failed to create output file: %w", err)
+		return "", videoURL, fmt.Errorf("failed to create output file: %w", err)
 	}
 	defer outFile.Close()
 
 	// Copy the video data to the file
 	_, err = io.Copy(outFile, videoFileResp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to save video file: %w", err)
+		return "", videoURL, fmt.Errorf("failed to save video file: %w", err)
 	}
 
 	log.Info().Str("path", fullPath).Msg("video downloaded successfully")
-	return nil
+	return fullPath, videoURL, nil
 }

@@ -20,6 +20,8 @@ type Article struct {
 	Provider                          string             `bson:"provider" json:"provider"`
 	AiHasCheckedIfShouldDownloadVideo bool               `bson:"aiHasCheckedIfShouldDownloadVideo" json:"AiHasCheckedIfShouldDownloadVideo"`
 	AiSuggestsDownloadingVideo        bool               `bson:"aiSuggestsDownloadingVideo" json:"AiSuggestsDownloadingVideo"`
+	VideoPath                         string             `bson:"videoPath" json:"videoPath"` // Path to the downloaded video file
+	VideoUrl                          string             `bson:"videoUrl" json:"videoUrl"`   // Direct URL to the video file
 }
 
 // CreateArticle inserts a new article into the provided MongoDB collection.
