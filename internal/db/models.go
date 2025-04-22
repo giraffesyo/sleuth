@@ -62,6 +62,35 @@ func (c *Mongo) FindArticleByUrl(ctx context.Context, url string) (*Article, err
 	return &article, nil
 }
 
+func (c *Mongo) FindAllArticles(ctx context.Context) ([]*Article, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	var articles []*Article
+	filter := bson.M{} // Empty filter to get all documents
+
+	cursor, err := c.articles().Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	// Decode each document into an Article struct
+	for cursor.Next(ctx) {
+		var article Article
+		if err := cursor.Decode(&article); err != nil {
+			return nil, err
+		}
+		articles = append(articles, &article)
+	}
+
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+
+	return articles, nil
+}
+
 // FindAllArticlesNotChecked searches for all articles that have not been checked by AI.
 // It returns a slice of articles and an error if the operation fails.
 func (c *Mongo) FindAllArticlesNotChecked(ctx context.Context) ([]*Article, error) {

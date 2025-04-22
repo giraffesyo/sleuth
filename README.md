@@ -30,10 +30,34 @@ i.e. `mongosh mongodb://localhost:9000/?directConnection=true`
 
 ## Running without building first
 
+### Searching (adding to dataset)
+
 ```shell
 # from root directory
 export MONGODB_URI="mongodb://localhost:9000/?directConnection=true"
 go run cmd/sleuth/main.go search -q "body found"
+```
+
+### AI Check
+
+AI Check will determine if the video should be downloaded using llama LLM
+
+```
+# from root directory
+export MONGODB_URI="mongodb://localhost:9000/?directConnection=true"
+go run cmd/sleuth/main.go aicheck
+```
+
+### CSV
+
+CSV will export the dataset to CSV format, by default to standard out, you can also use `-o` flag to print it to a specified file.
+
+```
+# from root directory
+export MONGODB_URI="mongodb://localhost:9000/?directConnection=true"
+go run cmd/sleuth/main.go csv
+# or
+go run cmd/sleuth/main.go csv -o output.csv
 ```
 
 ## Audio Transcription
