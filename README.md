@@ -98,3 +98,9 @@ pip install --upgrade pip
 ```bash
 pip install -r requirements.txt
 ```
+
+### Usage:
+1. Run the audio processing script (this will detect the relevant timestamps from the extracted audio files and save them as `.json` in the `timestamps` folder)
+```bash
+python audio-extraction/pipeline.py
+```

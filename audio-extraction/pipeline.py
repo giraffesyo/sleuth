@@ -5,7 +5,7 @@ from transcription import transcribe_audio, extract_audio
 from llama import detect_body_discovery_events_full_context
 
 
-def process_video(video_path, json_output_dir="timestamps", audio_output_dir="audio"):
+def process_video(video_path, json_output_dir="timestamps", audio_output_dir="audios"):
     """Process video file to extract audio, transcribe it, and detect body discovery events.
 
     Args:
@@ -16,10 +16,10 @@ def process_video(video_path, json_output_dir="timestamps", audio_output_dir="au
     os.makedirs(json_output_dir, exist_ok=True)
 
     # Get the video filename without extension
-    # This is used to create the audio filename
+    # This is used to create the audio filename and the JSON filename
     # Also, this filename is referred to the video Id in the database
     video_filename = os.path.splitext(os.path.basename(video_path))[0]
-    
+
     # Create audio filename in the audio output directory
     audio_filename = f"{video_filename}.wav"
 
