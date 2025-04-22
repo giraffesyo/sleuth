@@ -2,7 +2,7 @@
 cnn.json
 foxnews.json
 
-output/
+outputs/
 
 # Python
 venv/
@@ -21,3 +21,6 @@ data
 
 # videos
 downloads
+
+# audios
+audio-outputs
