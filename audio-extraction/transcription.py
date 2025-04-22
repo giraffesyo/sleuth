@@ -21,7 +21,7 @@ def extract_audio(video_path, audio_path):
         input_video = ffmpeg.input(video_path)
         output_audio = ffmpeg.output(input_video, audio_path)
         ffmpeg.run(output_audio)
-        return output_audio_path
+        return audio_path
     except Exception as e:
         print("Error extracting audio: ", e)
         return None
@@ -129,6 +129,63 @@ def detect_relevant_timestamps_with_llama(segments):
     return relevant_timestamps
 
 
+def detect_body_discovery_events_full_context(segments):
+    """Use LLaMA-3 to find timestamps where body discovery is discussed.
+
+    Args:
+        segments (list): List of transcribed segments with timestamps.
+    Returns:
+        json: List of relevant timestamps with extracted text and other details.
+    """
+    # Format full text with timestamps
+    formatted_text = ""
+    for segment in segments:
+        start = convert_timestamp_to_hhmmss(segment["start"])
+        end = convert_timestamp_to_hhmmss(segment["end"])
+        formatted_text += f"{start} - {end}: {segment['text']}\n"
+
+    # Send full text to LLaMA-3
+    prompt = f"""
+    You are an investigator assistant AI.
+
+    Given this transcript from a video, extract **all mentions** of body discoveries, crime scenes, or similar events.
+
+    For each mention, return:
+    - `start`: Start time of the segment (MM:SS)
+    - `end`: End time of the segment (MM:SS)
+    - `text_snippet`: The snippet where the mention occurs
+    - `location`: If mentioned, where the body was found
+    - `time_detail`: Any info on *when* it happened (if stated)
+
+    Respond in the following JSON format:
+    [
+    {{
+        "start": "MM:SS",
+        "end": "MM:SS",
+        "text_snippet": "...",
+        "location": "...",
+        "time_detail": "..."
+    }},
+    ...
+    ]
+    
+    Respond with **only** the JSON array, with no additional text, commentary, or explanations.
+
+    Transcript:
+    {formatted_text}
+    """
+
+    try:
+        response = llama3(prompt)
+        print("LLaMA Structured Response:\n", response)
+        # Try to parse response safely
+        structured_results = json.loads(response)
+        return structured_results
+    except Exception as e:
+        print("Error parsing LLaMA structured output:", e)
+        return []
+
+
 def convert_timestamp_to_hhmmss(seconds):
     """Convert seconds to MM:SS format
 
@@ -147,40 +204,21 @@ def save_keywords_timestamps(relevant_segments, transcript_path):
     """
     with open(transcript_path, "w") as f:
         for segment in relevant_segments:
-            # f.write(f"{segment['start']} - {segment['end']}: {segment['text']}\n")
-            f.write(
-                f"{convert_timestamp_to_hhmmss(segment['start'])} - {convert_timestamp_to_hhmmss(segment['end'])}: {segment['text']}\n"
-            )
+            start = convert_timestamp_to_hhmmss(segment["start"])
+            end = convert_timestamp_to_hhmmss(segment["end"])
+            f.write(f"{start} - {end}: {segment['text']}\n")
     print(f"Relevant transcription saved to {transcript_path}")
 
 
 # Example usage
 video_path = "output.mp4"  # Replace with path to video file
 transcript_path = "output/transcription_results.txt"
-keywords = [
-    # "murder",
-    # "DNA",
-    # "dna",
-    "body found",
-    "dead",
-    "body",
-    "murderer",
-    "victim",
-    "crime scene",
-    # "criminal",
-    "location of the body",
-    "discovery site",
-]  # Keywords to search for in transcript
 
-# audio_path = extract_audio(video_path)
-# transcript, segments = transcribe_audio(audio_path)
+_, segments = transcribe_audio(video_path)
 
-transcript, segments = transcribe_audio(video_path)
-
-# relevant_segments = find_relevant_timestamps(segments, keywords)
 
 # test with LLama
-relevant_segments = detect_relevant_timestamps_with_llama(segments)
+structured_results = detect_body_discovery_events_full_context(segments)
 
-# Save output
-save_keywords_timestamps(relevant_segments, transcript_path)
+with open("output/structured_results.json", "w") as f:
+    json.dump(structured_results, f, indent=2)
