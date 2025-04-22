@@ -228,6 +228,11 @@ func determineCnnVideoUrl(ctx context.Context, article *db.Article) (string, err
 	if videoURL == "" {
 		return "", fmt.Errorf("no video URL found in the metadata")
 	}
+	// if video url starts with / then it's not valid
+	// these videos don't work on cnn's website either
+	if strings.HasPrefix(videoURL, "/") {
+		return "", fmt.Errorf("video URL is not valid: %s", videoURL)
+	}
 
 	return videoURL, nil
 }
