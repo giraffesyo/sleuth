@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"strings"
+
 	"github.com/chromedp/chromedp"
 	"github.com/giraffesyo/sleuth/internal/db"
 	"github.com/rs/zerolog/log"
@@ -148,8 +150,30 @@ func determineVideoUrl(ctx context.Context, article *db.Article) error {
 // determineVideoUrl extracts the direct video URL for a CNN article
 // This handles the browser automation and API calls to get the URL
 func determineCnnVideoUrl(ctx context.Context, article *db.Article) (string, error) {
-	// Create a new ChromeDP context for browser automation
-	chromectx, cancel := chromedp.NewContext(ctx)
+	// Create a new ChromeDP context with custom logger to suppress unwanted errors
+	// This will prevent the "unhandled page event *page.EventFrameStartedNavigating" message
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.DisableGPU,
+		chromedp.Flag("enable-automation", false),
+		chromedp.Flag("headless", true),
+	)
+
+	allocCtx, cancel := chromedp.NewExecAllocator(ctx, opts...)
+	defer cancel()
+
+	// Use a custom logger that filters out the unwanted messages
+	logOpts := []chromedp.ContextOption{
+		// This is the key - it provides a custom log function that filters messages
+		chromedp.WithLogf(func(format string, args ...interface{}) {
+			// Skip logging "unhandled page event" messages
+			if strings.Contains(format, "unhandled page event") {
+				return
+			}
+			log.Debug().Msgf(format, args...)
+		}),
+	}
+
+	chromectx, cancel := chromedp.NewContext(allocCtx, logOpts...)
 	defer cancel()
 
 	// Set a timeout
