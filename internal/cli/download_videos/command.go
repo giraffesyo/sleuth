@@ -225,6 +225,9 @@ func determineCnnVideoUrl(ctx context.Context, article *db.Article) (string, err
 	// Get the direct MP4 URL
 	videoURL := videoData.Files[0].FileUri
 	log.Info().Str("videoURL", videoURL).Msg("found video URL")
+	if videoURL == "" {
+		return "", fmt.Errorf("no video URL found in the metadata")
+	}
 
 	return videoURL, nil
 }
