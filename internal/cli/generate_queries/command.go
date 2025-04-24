@@ -96,6 +96,7 @@ Return ONLY the search query with no explanations, quotes, or additional text.
 Do not use any special characters or database syntax.
 Do not join multiple queries together in any way.
 Do not attempt to return more than one query at a time.
+Do not use conjunctions (and, or, +, etc.) to combine multiple queries.
 `
 
 	// Call local Ollama API
