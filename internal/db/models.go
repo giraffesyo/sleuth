@@ -22,6 +22,7 @@ type Article struct {
 	AiSuggestsDownloadingVideo        bool               `bson:"aiSuggestsDownloadingVideo" json:"AiSuggestsDownloadingVideo"`
 	VideoPath                         string             `bson:"videoPath" json:"videoPath"` // Path to the downloaded video file
 	VideoUrl                          string             `bson:"videoUrl" json:"videoUrl"`   // Direct URL to the video file
+	VictimNames                       []string           `bson:"victimNames" json:"victimNames"`
 }
 
 // CreateArticle inserts a new article into the provided MongoDB collection.
