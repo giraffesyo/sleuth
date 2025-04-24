@@ -66,6 +66,25 @@ or
 go run cmd/sleuth/main.go csv -o output.csv
 ```
 
+### Show Queries
+
+```
+# Show all queries
+./sleuth show-queries
+
+# Show only unused queries
+./sleuth show-queries --unused
+
+# Get JSON output
+./sleuth show-queries --json
+
+# Save results to a file
+./sleuth show-queries -o queries.txt
+
+# Combine flags
+./sleuth show-queries --unused --json -o unused-queries.json
+```
+
 ## Audio Transcription
 
 ### Requirements:
@@ -100,7 +119,9 @@ pip install -r requirements.txt
 ```
 
 ### Usage:
+
 1. Run the audio processing script (this will detect the relevant timestamps from the extracted audio files and save them as `.json` in the `timestamps` folder)
+
 ```bash
 python audio-extraction/pipeline.py
 ```
