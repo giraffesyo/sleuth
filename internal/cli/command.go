@@ -10,6 +10,7 @@ import (
 	generateQueries "github.com/giraffesyo/sleuth/internal/cli/generate_queries"
 	ingestTimestamps "github.com/giraffesyo/sleuth/internal/cli/ingest_timestamps"
 	"github.com/giraffesyo/sleuth/internal/cli/search"
+	showQueries "github.com/giraffesyo/sleuth/internal/cli/show_queries"
 	"github.com/spf13/cobra"
 )
 
@@ -49,4 +50,5 @@ func init() {
 	RootCmd.AddCommand(ingestTimestamps.Cmd)
 	RootCmd.AddCommand(generateQueries.Cmd)
 	RootCmd.AddCommand(determineVictim.Cmd)
+	RootCmd.AddCommand(showQueries.Cmd)
 }
