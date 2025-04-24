@@ -33,6 +33,10 @@ func (c *Mongo) articles() *mongo.Collection {
 	return c.client.Database("sleuth").Collection("articles")
 }
 
+func (c *Mongo) queries() *mongo.Collection {
+	return c.client.Database("sleuth").Collection("queries")
+}
+
 func ensureUrlUniqueIndex(collection *mongo.Collection) error {
 	indexModel := mongo.IndexModel{
 		Keys:    bson.M{"url": 1},

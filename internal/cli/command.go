@@ -6,6 +6,7 @@ import (
 	"github.com/giraffesyo/sleuth/internal/cli/aicheck"
 	"github.com/giraffesyo/sleuth/internal/cli/csv"
 	downloadVideos "github.com/giraffesyo/sleuth/internal/cli/download_videos"
+	generateQueries "github.com/giraffesyo/sleuth/internal/cli/generate_queries"
 	ingestTimestamps "github.com/giraffesyo/sleuth/internal/cli/ingest_timestamps"
 	"github.com/giraffesyo/sleuth/internal/cli/search"
 	"github.com/spf13/cobra"
@@ -45,4 +46,5 @@ func init() {
 	RootCmd.AddCommand(csv.Cmd)
 	RootCmd.AddCommand(downloadVideos.Cmd)
 	RootCmd.AddCommand(ingestTimestamps.Cmd)
+	RootCmd.AddCommand(generateQueries.Cmd)
 }
