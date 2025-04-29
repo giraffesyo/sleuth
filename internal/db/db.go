@@ -69,6 +69,7 @@ func (c *Mongo) ConnectDatabase(uri string) error {
 	if err := ensureUrlUniqueIndex(c.articles()); err != nil {
 		return err
 	}
-	log.Info().Msg("Connected to MongoDB!")
+	hosts := clientOptions.Hosts
+	log.Info().Strs("hosts", hosts).Msg("Connected to MongoDB!")
 	return nil
 }
