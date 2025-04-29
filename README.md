@@ -28,7 +28,7 @@ docker compose up -d
 
 Connecting to the mongo database can be done via tools like [MongoDB Compass](https://www.mongodb.com/products/tools/compass) or using `mongosh`
 
-i.e. `mongosh mongodb://localhost:9000/?directConnection=true`
+e.g. `mongosh mongodb://localhost:9000/?directConnection=true`
 
 The default connection string is above, but can be overriden like so:
 
