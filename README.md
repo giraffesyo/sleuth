@@ -32,7 +32,7 @@ i.e. `mongosh mongodb://localhost:9000/?directConnection=true`
 
 The default connection string is above, but can be overriden like so:
 
-```
+```sh
 export MONGODB_URI="mongodb://localhost:9000/?directConnection=true"
 ```
 
