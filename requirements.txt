@@ -1,6 +1,10 @@
 python-dotenv==1.0.1
 ffmpeg-python==0.2.0
 openai-whisper==20240930
+sentence-transformers
+hdbscan
+pymongo
+tqdm
 # transformers==4.50.0
 # torch==2.6.0
 # tourchvision==0.21.0

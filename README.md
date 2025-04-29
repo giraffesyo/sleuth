@@ -85,43 +85,57 @@ go run cmd/sleuth/main.go csv -o output.csv
 ./sleuth show-queries --unused --json -o unused-queries.json
 ```
 
-## Audio Transcription
+# Python Components
 
-### Requirements:
+## Requirements:
 
 1. Python 3.11 (`brew install python@3.11`)
 2. ffmpeg (`brew install ffmpeg`)
 
-### Installation:
+## Installation:
 
-1. Create a virtual environment
+Create a virtual environment
 
 ```bash
 python3.11 -m venv venv
 ```
 
-2. Activate the virtual environment (MacOS/Linux)
+Activate the virtual environment (MacOS/Linux)
 
 ```bash
 source venv/bin/activate
 ```
 
-3. Upgrade pip version (optional)
+Upgrade pip version (optional)
 
 ```bash
 pip install --upgrade pip
 ```
 
-4. Install the dependencies
+Install the dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
+## Audio Transcription
+
 ### Usage:
 
-1. Run the audio processing script (this will detect the relevant timestamps from the extracted audio files and save them as `.json` in the `timestamps` folder)
+Run the audio processing script (this will detect the relevant timestamps from the extracted audio files and save them as `.json` in the `timestamps` folder)
 
 ```bash
 python audio-extraction/pipeline.py
+```
+
+## Clustering
+
+If you run the clustering application at [./clustering/main.py](./clustering/main.py), it will add a `clusterId`, `clusterConf`, and `embed` field to every mongo document in the `articles` collection. The clustering process utilizes HDBSCAN for grouping similar articles based on their embeddings. The embeddings are generated using the `sentence-transformers` library, specifically the `all-mpnet-base-v2` model.
+
+Documents with the same cluster id should be similar in content.
+
+### Usage
+
+```bash
+python3 clustering/main.py
 ```
