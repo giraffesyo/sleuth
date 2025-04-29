@@ -5,6 +5,7 @@ import (
 
 	"github.com/giraffesyo/sleuth/internal/cli/aicheck"
 	"github.com/giraffesyo/sleuth/internal/cli/csv"
+	determineLocation "github.com/giraffesyo/sleuth/internal/cli/determine_location"
 	determineVictim "github.com/giraffesyo/sleuth/internal/cli/determine_victim"
 	downloadVideos "github.com/giraffesyo/sleuth/internal/cli/download_videos"
 	generateQueries "github.com/giraffesyo/sleuth/internal/cli/generate_queries"
@@ -50,5 +51,6 @@ func init() {
 	RootCmd.AddCommand(ingestTimestamps.Cmd)
 	RootCmd.AddCommand(generateQueries.Cmd)
 	RootCmd.AddCommand(determineVictim.Cmd)
+	RootCmd.AddCommand(determineLocation.Cmd)
 	RootCmd.AddCommand(showQueries.Cmd)
 }
