@@ -139,3 +139,5 @@ Documents with the same cluster id should be similar in content.
 ```bash
 python3 clustering/main.py
 ```
+
+Visualizing the clusters can be done using `python3 visualize_clusters.py --html clusters.html`, then opening `clusters.html` in a web browser.
