@@ -31,6 +31,13 @@ def build_text(doc):
       - concatenated snippets from relevantTimestamps
     """
     parts = [doc.get("title", ""), doc.get("description", ""), doc.get("date", "")]
+    
+    # Include victim names if they’re known
+    names = [n for n in doc.get("victimNames", []) if n.lower() != "unknown"]
+    if names:
+        parts.append("Victims: " + ", ".join(names))
+        
+    # Include body discovery events
     events = doc.get("relevantTimestamps", [])
     for e in events:
         snippet = e.get("text_snippet", "").strip()
@@ -55,6 +62,7 @@ docs = list(
             "title": 1,
             "description": 1,
             "date": 1,
+            "victimNames": 1,
             "bodyDiscoveryEvents.text_snippet": 1,
             "bodyDiscoveryEvents.location": 1,
             "bodyDiscoveryEvents.time_detail": 1,
