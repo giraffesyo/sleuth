@@ -4,6 +4,75 @@ Sleuth is a pipeline of tools for the analysis of News footage. It is designed t
 
 ![](./sleuth.png)
 
+### Prerequisite:
+- This project assumes that you have installed Ollama and Llama3.1 8B locally and have it running.
+- You can download Ollama from their Github repo: https://github.com/ollama/ollama
+- Then install Llama3.1 8B or other versions by running
+```shell
+ollama run llama3.1 # will download if the first time
+ollama serve # this will start the Ollama server on port 11434
+```
+### Installation:
+- Build Sleuth CLI (with Golang installed) (`./build/build.sh`) - optional if `sleuth` executable file exists.
+- Python 3.11 (`brew install python@3.11`)
+- ffmpeg (`brew install ffmpeg`)
+
+- Create a virtual environment
+
+```bash
+python3.11 -m venv venv
+```
+
+- Activate the virtual environment (MacOS/Linux)
+
+```bash
+source venv/bin/activate
+```
+
+- Upgrade pip version (optional)
+
+```bash
+pip install --upgrade pip
+```
+
+- Install the dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+# Overall Pipeline:
+- Search for articles using keywords, for example `"body found"`
+```shell
+# Starting the DB and Docker
+export MONGODB_URI="mongodb://localhost:9000/?directConnection=true"
+docker compose up -d
+
+# Obtain articles metadata
+./sleuth search -q "murder cases"
+```
+
+- Perform AI check and download videos to `/downloads` folder
+```shell
+./sleuth aicheck
+./sleuth download-videos
+```
+
+- Get the transcription and find relevant timestamps where they discuss body discovery. This will create 2 folders, `/audios` containing corresponding audio files, and `/timestamps` containing extracted JSON of relevant timestamps.
+```shell
+python audio-extraction/pipeline.py
+./sleuth ingest-timestamp-metadata  # this will update the DB records with the relevantTimestamps
+```
+
+- Case Grouping:
+```shell
+./sleuth determine-location     # determine case location if possible
+./sleuth determine-victim       # determine victim names if possible
+
+python clustering/updated_pipeline.py   # embed the data and group cases using HDBScan
+python clustering/visualize_clusters.py --html clustering/clusters.html # output an interactive visualization of clusters
+```
+
 # Sleuth CLI
 
 The sleuth CLI is responsible for searching various news providers for multimedia content to be further processed.
@@ -32,7 +101,7 @@ e.g. `mongosh mongodb://localhost:9000/?directConnection=true`
 
 The default connection string is above, but can be overriden like so:
 
-```sh
+```shell
 export MONGODB_URI="mongodb://localhost:9000/?directConnection=true"
 ```
 
@@ -86,38 +155,6 @@ go run cmd/sleuth/main.go csv -o output.csv
 ```
 
 # Python Components
-
-## Requirements:
-
-1. Python 3.11 (`brew install python@3.11`)
-2. ffmpeg (`brew install ffmpeg`)
-
-## Installation:
-
-Create a virtual environment
-
-```bash
-python3.11 -m venv venv
-```
-
-Activate the virtual environment (MacOS/Linux)
-
-```bash
-source venv/bin/activate
-```
-
-Upgrade pip version (optional)
-
-```bash
-pip install --upgrade pip
-```
-
-Install the dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
 ## Audio Transcription
 
 ### Usage:
@@ -136,8 +173,12 @@ Documents with the same cluster id should be similar in content.
 
 ### Usage
 
-```bash
-python3 clustering/main.py
+```shell
+python clustering/updated_pipeline.py
 ```
 
-Visualizing the clusters can be done using `python3 visualize_clusters.py --html clusters.html`, then opening `clusters.html` in a web browser.
+Visualizing the clusters can be done using 
+```shell
+python clustering/visualize_clusters.py --html clustering/clusters.html
+```
+then opening `clustering/clusters.html` in a web browser.
