@@ -27,16 +27,22 @@ def get_device():
 def build_text(doc):
     """
     Build a single text string for embedding:
-      - title, description, date
+      - title, description, date, location
+      - victim names (if known)
       - concatenated snippets from relevantTimestamps
     """
-    parts = [doc.get("title", ""), doc.get("description", ""), doc.get("date", "")]
-    
+    parts = [
+        doc.get("title", ""),
+        doc.get("description", ""),
+        doc.get("date", ""),
+        doc.get("location", ""),
+    ]
+
     # Include victim names if they’re known
     names = [n for n in doc.get("victimNames", []) if n.lower() != "unknown"]
     if names:
         parts.append("Victims: " + ", ".join(names))
-        
+
     # Include body discovery events
     events = doc.get("relevantTimestamps", [])
     for e in events:
@@ -62,10 +68,11 @@ docs = list(
             "title": 1,
             "description": 1,
             "date": 1,
+            "location": 1,
             "victimNames": 1,
-            "bodyDiscoveryEvents.text_snippet": 1,
-            "bodyDiscoveryEvents.location": 1,
-            "bodyDiscoveryEvents.time_detail": 1,
+            "relevantTimestamps.text_snippet": 1,
+            "relevantTimestamps.location": 1,
+            "relevantTimestamps.time_detail": 1,
         },
     )
 )
