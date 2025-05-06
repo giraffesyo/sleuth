@@ -81,8 +81,8 @@ func run(cmd *cobra.Command, args []string) {
 	// Write header row
 	header := []string{
 		"ID", "Title", "URL", "Date", "Description", "Provider",
-		"AI Checked", "AI Suggests Download", "Victim Names", "Location",
-		"Case ID", "Relevant Timestamps",
+		"AI Checked", "AI Suggests Download", "Video URL", "Video Path",
+		"Victim Names", "Location", "Case ID", "Relevant Timestamps",
 	}
 	if err := writer.Write(header); err != nil {
 		log.Fatal().Err(err).Msg("error writing CSV header")
@@ -99,6 +99,8 @@ func run(cmd *cobra.Command, args []string) {
 			article.Provider,
 			fmt.Sprintf("%t", article.AiHasCheckedIfShouldDownloadVideo),
 			fmt.Sprintf("%t", article.AiSuggestsDownloadingVideo),
+			article.VideoUrl,
+			article.VideoPath,
 			strings.Join(article.VictimNames, ", "),
 			article.Location,
 			fmt.Sprintf("%d", article.CaseId),
