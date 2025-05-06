@@ -44,7 +44,7 @@ pip install -r requirements.txt
 # Overall Pipeline:
 - Search for articles using keywords, for example `"body found"`
 ```shell
-# Starting the DB and Docker
+# Starting the DB and Docker - optional, you can use a different connection string without docker
 export MONGODB_URI="mongodb://localhost:9000/?directConnection=true"
 docker compose up -d
 
