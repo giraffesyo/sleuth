@@ -2,8 +2,10 @@ package csv
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/giraffesyo/sleuth/internal/db"
 	"github.com/rs/zerolog/log"
@@ -19,6 +21,16 @@ var (
 
 func long() string {
 	return "Export articles from the database to CSV format. By default outputs to stdout, but can write to a file with -o flag."
+}
+
+// timestampsToJSON marshals the entire slice into a JSON array string.
+func timestampsToJSON(timestamps []db.RelevantTimestamp) string {
+	b, err := json.Marshal(timestamps)
+	if err != nil {
+		// in case of error, fall back to empty array
+		return "[]"
+	}
+	return string(b)
 }
 
 var Cmd = &cobra.Command{
@@ -69,7 +81,8 @@ func run(cmd *cobra.Command, args []string) {
 	// Write header row
 	header := []string{
 		"ID", "Title", "URL", "Date", "Description", "Provider",
-		"AI Checked", "AI Suggests Download",
+		"AI Checked", "AI Suggests Download", "Victim Names", "Location",
+		"Case ID", "Relevant Timestamps",
 	}
 	if err := writer.Write(header); err != nil {
 		log.Fatal().Err(err).Msg("error writing CSV header")
@@ -86,6 +99,10 @@ func run(cmd *cobra.Command, args []string) {
 			article.Provider,
 			fmt.Sprintf("%t", article.AiHasCheckedIfShouldDownloadVideo),
 			fmt.Sprintf("%t", article.AiSuggestsDownloadingVideo),
+			strings.Join(article.VictimNames, ", "),
+			article.Location,
+			fmt.Sprintf("%d", article.CaseId),
+			timestampsToJSON(article.RelevantTimestamps),
 		}
 		if err := writer.Write(row); err != nil {
 			log.Error().Err(err).Str("url", article.Url).Msg("error writing article to CSV")

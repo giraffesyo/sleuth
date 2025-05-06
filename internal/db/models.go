@@ -10,19 +10,32 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// RelevantTimestamp represents one extracted segment where
+// a body discovery (or related forensic event) was mentioned.
+type RelevantTimestamp struct {
+	Start       string `bson:"start"       json:"start"`        // e.g. "00:25"
+	End         string `bson:"end"         json:"end"`          // e.g. "00:28"
+	TextSnippet string `bson:"textSnippet" json:"text_snippet"` // the transcript excerpt
+	Location    string `bson:"location"    json:"location"`     // if extracted
+	TimeDetail  string `bson:"timeDetail"  json:"time_detail"`  // e.g. "yesterday evening"
+}
+
 // Article represents a news article model.
 type Article struct {
-	Id                                primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"` // MongoDB document ID
-	Title                             string             `bson:"title" json:"title"`
-	Url                               string             `bson:"url" json:"url"`
-	Date                              string             `bson:"date" json:"date"`
-	Description                       string             `bson:"description" json:"description"`
-	Provider                          string             `bson:"provider" json:"provider"`
-	AiHasCheckedIfShouldDownloadVideo bool               `bson:"aiHasCheckedIfShouldDownloadVideo" json:"AiHasCheckedIfShouldDownloadVideo"`
-	AiSuggestsDownloadingVideo        bool               `bson:"aiSuggestsDownloadingVideo" json:"AiSuggestsDownloadingVideo"`
-	VideoPath                         string             `bson:"videoPath" json:"videoPath"` // Path to the downloaded video file
-	VideoUrl                          string             `bson:"videoUrl" json:"videoUrl"`   // Direct URL to the video file
-	VictimNames                       []string           `bson:"victimNames" json:"victimNames"`
+	Id                                primitive.ObjectID  `bson:"_id,omitempty" json:"id,omitempty"` // MongoDB document ID
+	Title                             string              `bson:"title" json:"title"`
+	Url                               string              `bson:"url" json:"url"`
+	Date                              string              `bson:"date" json:"date"`
+	Description                       string              `bson:"description" json:"description"`
+	Provider                          string              `bson:"provider" json:"provider"`
+	AiHasCheckedIfShouldDownloadVideo bool                `bson:"aiHasCheckedIfShouldDownloadVideo" json:"AiHasCheckedIfShouldDownloadVideo"`
+	AiSuggestsDownloadingVideo        bool                `bson:"aiSuggestsDownloadingVideo" json:"AiSuggestsDownloadingVideo"`
+	VideoPath                         string              `bson:"videoPath" json:"videoPath"` // Path to the downloaded video file
+	VideoUrl                          string              `bson:"videoUrl" json:"videoUrl"`   // Direct URL to the video file
+	RelevantTimestamps                []RelevantTimestamp `bson:"relevantTimestamps" json:"relevantTimestamps"`
+	VictimNames                       []string            `bson:"victimNames" json:"victimNames"`
+	Location                          string              `bson:"location" json:"location"`
+	CaseId                            int32               `bson:"caseId" json:"caseId"` // For case grouping
 }
 
 // CreateArticle inserts a new article into the provided MongoDB collection.
